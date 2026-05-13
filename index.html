@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nandwani — Job Scheduler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f0ebe0;
+  --surface:#faf7f2;
+  --surface2:#f0ebe0;
+  --surface3:#e5dfd3;
+  --border:rgba(0,0,0,0.08);
+  --border2:rgba(0,0,0,0.14);
+  --gold:#9a7230;
+  --gold-light:#b5893a;
+  --gold-dim:rgba(154,114,48,0.13);
+  --gold-glow:rgba(154,114,48,0.07);
+  --terra:#a84432;
+  --terra-dim:rgba(168,68,50,0.1);
+  --green:#3a7a4f;
+  --green-dim:rgba(58,122,79,0.12);
+  --blue:#2d5ea8;
+  --blue-dim:rgba(45,94,168,0.12);
+  --muted:#8a7d6a;
+  --muted2:#6a5d4e;
+  --text:#1a130a;
+  --text2:#3d3020;
+  --shadow:0 2px 16px rgba(0,0,0,0.08);
+  --shadow-lg:0 8px 40px rgba(0,0,0,0.12);
+  --radius:10px;
+  --radius-sm:7px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;font-size:17px}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:3px}
+
+/* ── TOPBAR ── */
+.topbar{height:58px;background:var(--surface);border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:200;box-shadow:var(--shadow)}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.logo-mark{width:36px;height:36px;background:var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Literata',serif;font-size:1.2rem;font-weight:600;color:white}
+.logo-text{font-family:'Literata',serif;font-size:1.1rem;font-weight:500;color:var(--text)}
+.logo-text span{color:var(--gold)}
+.logo-sub{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.lang-toggle{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;overflow:hidden;font-size:.78rem}
+.lang-btn{padding:5px 13px;cursor:pointer;transition:all .2s;color:var(--muted2);font-weight:500;border:none;background:transparent;font-family:inherit}
+.lang-btn.active{background:var(--gold);color:white}
+
+/* ── NAV TABS ── */
+.main-nav{display:flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:3px}
+.main-nav-btn{padding:6px 16px;background:transparent;border:none;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--muted2);cursor:pointer;transition:all .2s;font-weight:500}
+.main-nav-btn:hover{color:var(--text)}
+.main-nav-btn.active{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,0.1)}
+
+.btn-add{padding:8px 18px;background:var(--terra);border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.85rem;color:white;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;font-weight:600;white-space:nowrap}
+.btn-add:hover{background:#8a3224;transform:translateY(-1px);box-shadow:0 4px 16px rgba(168,68,50,.3)}
+.btn-primary{padding:9px 20px;background:var(--gold);border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.88rem;color:white;cursor:pointer;transition:all .2s;font-weight:600}
+.btn-primary:hover{background:#7a5a25;transform:translateY(-1px)}
+.btn-ghost{padding:9px 18px;background:transparent;border:1.5px solid var(--border2);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--muted2);cursor:pointer;transition:all .2s;font-weight:500}
+.btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn-danger{padding:9px 18px;background:var(--terra);border:none;border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:.88rem;color:white;cursor:pointer;transition:all .2s;font-weight:600}
+.btn-sm{padding:5px 11px;font-size:.75rem;border-radius:5px}
+.icon-btn{width:28px;height:28px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--muted2);cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.icon-btn:hover{border-color:var(--terra);color:var(--terra)}
+.icon-btn.edit:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── PAGE VIEWS ── */
+.page-view{display:none}
+.page-view.active{display:block}
+
+/* ── CALENDAR LAYOUT ── */
+.cal-layout{display:grid;grid-template-columns:248px 1fr;height:calc(100vh - 58px)}
+.cal-sidebar{background:var(--surface);border-right:1px solid var(--border2);overflow-y:auto;display:flex;flex-direction:column;gap:0}
+.sidebar-block{padding:16px 16px;border-bottom:1px solid var(--border)}
+.sidebar-label{font-size:.6rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;font-weight:600}
+
+/* Mini Cal */
+.mini-cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mini-cal-month{font-family:'Literata',serif;font-size:1rem;font-weight:500;color:var(--text)}
+.mini-nav{width:22px;height:22px;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;color:var(--muted2);cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center}
+.mini-nav:hover{border-color:var(--gold);color:var(--gold)}
+.mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
+.mini-dow{font-size:.56rem;text-align:center;padding:3px 0;color:var(--muted);text-transform:uppercase;font-weight:600}
+.mini-day{font-size:.72rem;text-align:center;padding:5px 1px;border-radius:4px;cursor:pointer;color:var(--text2);transition:all .15s;position:relative}
+.mini-day:hover{background:var(--surface3)}
+.mini-day.today-d{color:var(--gold);font-weight:700}
+.mini-day.sel-d{background:var(--gold);color:white;font-weight:700}
+.mini-day.has-j::after{content:'';position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--terra)}
+.mini-day.other-m{color:var(--muted);opacity:.35}
+
+/* Filters */
+.co-filter{display:flex;align-items:center;gap:8px;padding:6px 7px;border-radius:6px;cursor:pointer;transition:background .15s;margin-bottom:1px}
+.co-filter:hover{background:var(--surface2)}
+.co-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.co-name{font-size:.8rem;color:var(--text2);flex:1}
+.toggle{width:30px;height:17px;background:var(--surface3);border-radius:9px;position:relative;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--gold)}
+.toggle::after{content:'';position:absolute;width:11px;height:11px;background:white;border-radius:50%;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{left:16px}
+
+/* Employee pills sidebar */
+.emp-pill{display:flex;align-items:center;gap:8px;padding:6px 7px;border-radius:6px;cursor:pointer;transition:background .15s;border:1px solid transparent;margin-bottom:1px}
+.emp-pill:hover{background:var(--surface2)}
+.emp-pill.sel-emp{background:var(--gold-glow);border-color:rgba(154,114,48,.25)}
+.emp-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:white;flex-shrink:0}
+.emp-pill-name{flex:1;font-size:.8rem;font-weight:500;color:var(--text)}
+.emp-pill-badge{font-family:'JetBrains Mono',monospace;font-size:.6rem;color:var(--gold);background:var(--gold-dim);padding:1px 6px;border-radius:8px;font-weight:700}
+
+/* Today summary */
+.today-box-title{font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;font-weight:700}
+.avail-emp-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}
+.avail-emp-row:last-child{border-bottom:none}
+.avail-emp-row .name{font-size:.82rem;font-weight:600;flex:1;color:var(--text)}
+.avail-emp-row .status{font-size:.72rem;color:var(--muted2)}
+.avail-emp-row .status.part{color:var(--gold)}
+
+/* ── CAL MAIN ── */
+.cal-main{overflow:hidden;display:flex;flex-direction:column}
+.cal-toolbar{padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);background:var(--surface);flex-shrink:0}
+.cal-view-tabs{display:flex}
+.cvt{padding:14px 15px;font-size:.73rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;font-weight:600}
+.cvt:hover{color:var(--text)}
+.cvt.active{color:var(--gold);border-bottom-color:var(--gold)}
+.cal-nav{display:flex;align-items:center;gap:8px;padding:10px 0}
+.nav-btn{width:30px;height:30px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--muted2);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.nav-btn:hover{border-color:var(--gold);color:var(--gold)}
+.cal-date-disp{font-family:'Literata',serif;font-size:1.1rem;color:var(--text);min-width:180px;text-align:center}
+.today-btn{padding:5px 11px;background:var(--surface2);border:1px solid var(--border2);border-radius:5px;font-size:.7rem;letter-spacing:.06em;color:var(--muted2);cursor:pointer;transition:all .2s}
+.today-btn:hover{border-color:var(--gold);color:var(--gold)}
+.cal-body{flex:1;overflow:auto}
+
+/* Week grid */
+.week-grid{display:grid;grid-template-columns:60px repeat(7,1fr);min-width:820px}
+.wg-corner{background:var(--surface);border-right:1px solid var(--border);border-bottom:1px solid var(--border);height:64px;position:sticky;top:0;z-index:10}
+.wg-day-hdr{padding:10px 6px;text-align:center;background:var(--surface);border-right:1px solid var(--border);border-bottom:1px solid var(--border2);position:sticky;top:0;z-index:10;cursor:pointer;transition:background .15s}
+.wg-day-hdr:hover{background:var(--surface2)}
+.wg-day-hdr.today-col{background:rgba(154,114,48,.07)}
+.wg-dow{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.wg-dn{font-family:'Literata',serif;font-size:1.4rem;color:var(--text);line-height:1.2}
+.wg-day-hdr.today-col .wg-dn{color:var(--gold)}
+.wg-jcnt{font-size:.6rem;color:var(--muted);margin-top:1px}
+.wg-time-gutter{background:var(--surface);border-right:1px solid var(--border);border-bottom:1px solid var(--border);height:52px;display:flex;align-items:flex-start;justify-content:center;padding-top:5px}
+.time-lbl{font-family:'JetBrains Mono',monospace;font-size:.58rem;color:var(--muted)}
+.wg-cell{border-right:1px solid var(--border);border-bottom:1px solid var(--border);height:52px;cursor:pointer;transition:background .1s}
+.wg-cell:last-child{border-right:none}
+.wg-cell:hover{background:rgba(154,114,48,.04)}
+.wg-cell.today-col{background:rgba(154,114,48,.02)}
+
+.job-block{position:absolute;left:2px;right:2px;border-radius:5px;padding:3px 6px;font-size:.63rem;cursor:pointer;overflow:hidden;z-index:5;border-left:3px solid;transition:filter .15s}
+.job-block:hover{filter:brightness(.9)}
+.jb-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jb-type{font-size:.56rem;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jb-time{font-family:'JetBrains Mono',monospace;font-size:.52rem;opacity:.55}
+
+/* Day grid */
+.day-grid{display:grid;grid-template-columns:60px 1fr;min-width:400px}
+.day-hdr{grid-column:1/-1;padding:16px 20px;border-bottom:1px solid var(--border2);background:var(--surface);display:flex;align-items:center;justify-content:space-between}
+.day-hdr h2{font-family:'Literata',serif;font-size:1.6rem;color:var(--text)}
+.day-stats{display:flex;gap:18px}
+.ds-stat .n{font-family:'Literata',serif;font-size:1.5rem;color:var(--gold)}
+.ds-stat .l{font-size:.6rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;font-weight:700}
+.day-tg{background:var(--surface);border-right:1px solid var(--border);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:flex-start;justify-content:center;padding-top:5px}
+.day-col{border-bottom:1px solid var(--border);height:60px;cursor:pointer;transition:background .1s}
+.day-col:hover{background:rgba(154,114,48,.04)}
+.day-job-block{position:absolute;left:8px;right:8px;border-radius:7px;padding:7px 11px;cursor:pointer;border-left:4px solid;transition:all .15s}
+.day-job-block:hover{transform:translateX(3px);filter:brightness(.93)}
+.djb-emp{font-weight:700;font-size:.88rem;margin-bottom:2px}
+.djb-type{font-size:.76rem;opacity:.75;margin-bottom:2px}
+.djb-addr{font-size:.7rem;opacity:.55;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.djb-time{font-family:'JetBrains Mono',monospace;font-size:.62rem;opacity:.5;margin-top:3px}
+.djb-proj{font-size:.62rem;opacity:.5;font-style:italic;margin-top:2px}
+
+/* List */
+.list-view-inner{padding:20px 24px}
+.list-date-grp{margin-bottom:22px}
+.list-date-lbl{font-family:'Literata',serif;font-size:1.1rem;color:var(--text);margin-bottom:9px;padding-bottom:7px;border-bottom:1px solid var(--border2);display:flex;align-items:baseline;gap:10px}
+.list-date-cnt{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted)}
+.list-job{display:grid;grid-template-columns:82px 1fr 1fr 1fr auto;gap:12px;align-items:center;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:5px;cursor:pointer;transition:all .15s;border-left:3px solid}
+.list-job:hover{background:var(--surface2);transform:translateX(2px);box-shadow:var(--shadow)}
+.lj-time{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--gold);font-weight:500}
+.lj-emp{font-weight:600;font-size:.84rem}
+.lj-type{font-size:.78rem;color:var(--text2)}
+.lj-addr{font-size:.74rem;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lj-actions{display:flex;gap:5px}
+
+.current-time-line{position:absolute;height:2px;background:var(--terra);z-index:8;pointer-events:none}
+.current-time-line::before{content:'';position:absolute;width:7px;height:7px;background:var(--terra);border-radius:50%;left:-3.5px;top:-2.5px}
+
+.conflict-banner{background:rgba(168,68,50,.12);border:1px solid rgba(168,68,50,.35);border-radius:6px;padding:8px 12px;font-size:.78rem;color:var(--terra);margin:10px 24px 0;display:flex;align-items:center;gap:8px}
+
+/* ── EMPLOYEE PAGE ── */
+.emp-page{padding:24px;max-width:1200px}
+.emp-page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.emp-page-hdr h2{font-family:'Literata',serif;font-size:1.6rem;color:var(--text)}
+.emp-date-info{font-size:.8rem;color:var(--muted2)}
+
+/* Availability grid */
+.avail-section{margin-bottom:28px}
+.avail-title{font-size:.62rem;letter-spacing:.17em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;font-weight:700;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.avail-grid{display:grid;grid-template-columns:100px repeat(15,1fr);gap:2px;font-size:.6rem}
+.avail-header-cell{text-align:center;color:var(--muted);font-family:'JetBrains Mono',monospace;padding:3px 1px}
+.avail-emp-name{font-weight:600;font-size:.72rem;color:var(--text2);display:flex;align-items:center;gap:5px;padding:4px 0}
+.avail-cell{height:26px;border-radius:3px;position:relative;cursor:pointer;transition:filter .15s}
+.avail-cell:hover{filter:brightness(.85)}
+.avail-free{background:var(--surface3)}
+.avail-busy{border-radius:3px}
+
+.co-section{margin-bottom:26px}
+.co-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border2)}
+.co-bar{width:4px;height:24px;border-radius:2px}
+.co-hdr h3{font-family:'Literata',serif;font-size:1.2rem;color:var(--text)}
+.co-count{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);background:var(--surface2);padding:3px 8px;border-radius:10px}
+.emp-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:9px}
+.emp-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;align-items:center;gap:11px;transition:all .15s;position:relative;overflow:hidden;border-left:3px solid}
+.emp-card:hover{background:var(--surface2);box-shadow:var(--shadow)}
+.emp-card-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Literata',serif;font-size:1rem;font-weight:600;color:white;flex-shrink:0}
+.emp-card-info{flex:1;min-width:0}
+.emp-card-name{font-size:.88rem;font-weight:600;color:var(--text);margin-bottom:2px}
+.emp-card-meta{font-size:.65rem;color:var(--muted)}
+.emp-card-acts{display:flex;flex-direction:column;gap:4px;opacity:0;transition:opacity .15s}
+.emp-card:hover .emp-card-acts{opacity:1}
+.add-emp-card{background:transparent;border:1.5px dashed var(--border2);border-radius:var(--radius);padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:all .2s;color:var(--muted);font-size:.8rem}
+.add-emp-card:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-glow)}
+
+/* ── PROJECTS PAGE ── */
+.proj-page{padding:24px;max-width:1100px}
+.proj-page-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.proj-page-hdr h2{font-family:'Literata',serif;font-size:1.6rem;color:var(--text)}
+.proj-tabs{display:flex;gap:6px;margin-bottom:18px}
+.ptab{padding:7px 16px;border:1px solid var(--border2);border-radius:20px;font-size:.8rem;cursor:pointer;transition:all .2s;color:var(--muted2);font-weight:500;background:var(--surface)}
+.ptab.active{background:var(--gold);border-color:var(--gold);color:white;font-weight:600}
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.proj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:all .2s;cursor:pointer}
+.proj-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.proj-card.closed{opacity:.6}
+.proj-card-top{padding:16px;border-bottom:1px solid var(--border)}
+.proj-card-top h3{font-family:'Literata',serif;font-size:1.1rem;color:var(--text);margin-bottom:4px}
+.proj-customer{font-size:.78rem;color:var(--muted2);margin-bottom:8px}
+.proj-badges{display:flex;gap:6px;flex-wrap:wrap}
+.proj-badge{font-size:.65rem;padding:3px 9px;border-radius:12px;font-weight:600}
+.status-active{background:var(--green-dim);color:var(--green)}
+.status-closed{background:var(--surface3);color:var(--muted2)}
+.proj-card-body{padding:12px 16px;display:flex;gap:14px}
+.proj-stat{text-align:center}
+.proj-stat .n{font-family:'Literata',serif;font-size:1.3rem;color:var(--gold)}
+.proj-stat .l{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.proj-card-footer{padding:10px 16px;background:var(--surface2);border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state .e-icon{font-size:2.5rem;margin-bottom:12px}
+.empty-state h3{font-family:'Literata',serif;font-size:1.3rem;margin-bottom:6px;color:var(--text2)}
+.empty-state p{font-size:.85rem;line-height:1.6}
+
+/* ── EMAIL PAGE ── */
+.email-page{padding:24px;max-width:800px}
+.email-page h2{font-family:'Literata',serif;font-size:1.5rem;margin-bottom:4px}
+.email-page p.sub{font-size:.85rem;color:var(--muted2);margin-bottom:20px}
+.email-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:20px}
+.email-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.email-card .e-lbl{font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.email-card .e-val{font-family:'Literata',serif;font-size:1.05rem;color:var(--text)}
+.email-preview{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+.email-preview-bar{background:var(--surface2);padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.ep-dot{width:11px;height:11px;border-radius:50%}
+.email-preview-body{padding:16px 20px;font-family:'JetBrains Mono',monospace;font-size:.72rem;white-space:pre-wrap;color:var(--text2);line-height:1.7;max-height:320px;overflow-y:auto}
+.email-actions{display:flex;gap:10px;flex-wrap:wrap}
+.email-note{font-size:.72rem;color:var(--muted);margin-top:10px;line-height:1.7}
+
+/* ── MODALS ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,5,0,.45);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.open{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:640px;max-height:92vh;overflow-y:auto;animation:slideUp .22s ease;box-shadow:var(--shadow-lg)}
+.modal.modal-sm{max-width:440px}
+@keyframes slideUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:5}
+.modal-title{font-family:'Literata',serif;font-size:1.35rem;color:var(--text)}
+.modal-close{width:28px;height:28px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;color:var(--muted2);cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.modal-close:hover{border-color:var(--terra);color:var(--terra)}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:14px 24px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface)}
+
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:.63rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted2);margin-bottom:5px;font-weight:700}
+.form-input,.form-select,.form-textarea{width:100%;background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:10px 13px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--text);outline:none;transition:border-color .15s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--gold);background:white;box-shadow:0 0 0 3px rgba(154,114,48,.1)}
+.form-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;background-size:12px;padding-right:36px}
+.form-textarea{min-height:68px;resize:vertical;line-height:1.5}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-hint{font-size:.68rem;color:var(--muted);margin-top:4px}
+
+/* Conflict warning in modal */
+.conflict-alert{background:var(--terra-dim);border:1px solid rgba(168,68,50,.3);border-radius:6px;padding:9px 12px;font-size:.78rem;color:var(--terra);margin-bottom:12px;display:none}
+.conflict-alert.show{display:block}
+
+/* Multi-emp selector */
+.emp-multi-wrap{border:1.5px solid var(--border2);border-radius:var(--radius-sm);background:var(--surface2);overflow:hidden}
+.emp-multi-search{width:100%;padding:9px 13px;border:none;border-bottom:1px solid var(--border);background:var(--surface2);font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--text);outline:none}
+.emp-multi-list{max-height:170px;overflow-y:auto}
+.emp-opt{display:flex;align-items:center;gap:10px;padding:7px 12px;cursor:pointer;transition:background .1s;user-select:none}
+.emp-opt:hover{background:rgba(0,0,0,.04)}
+.emp-opt.checked{background:var(--gold-glow)}
+.emp-opt.conflict-emp{background:rgba(168,68,50,.08)}
+.emp-cb{width:16px;height:16px;border:1.5px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:white;font-size:.6rem;color:white;font-weight:700;transition:all .15s}
+.emp-opt.checked .emp-cb{background:var(--gold);border-color:var(--gold)}
+.emp-opt-name{font-size:.82rem;font-weight:500;flex:1}
+.emp-opt-co{font-size:.62rem;color:var(--muted)}
+.emp-opt-busy{font-size:.6rem;color:var(--terra);font-style:italic}
+.team-preview{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;min-height:22px}
+.team-chip{display:flex;align-items:center;gap:4px;background:var(--surface3);padding:3px 9px;border-radius:12px;font-size:.72rem;font-weight:600;color:var(--text2)}
+.team-chip-dot{width:6px;height:6px;border-radius:50%}
+
+/* Materials */
+.mat-section{border:1.5px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden}
+.mat-section-hdr{background:var(--surface2);padding:8px 12px;display:flex;justify-content:space-between;align-items:center;font-size:.75rem;font-weight:600;color:var(--text2);border-bottom:1px solid var(--border)}
+.add-mat-btn{padding:3px 10px;background:var(--gold);border:none;border-radius:4px;font-family:'DM Sans',sans-serif;font-size:.68rem;color:white;cursor:pointer;font-weight:600}
+.mat-col-hdr{display:grid;grid-template-columns:1fr 70px 70px 28px;gap:6px;padding:5px 10px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:.6rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.mat-rows{min-height:36px}
+.mat-row{display:grid;grid-template-columns:1fr 70px 70px 28px;gap:6px;padding:5px 10px;border-bottom:1px solid var(--border)}
+.mat-row:last-child{border-bottom:none}
+.mat-inp{background:transparent;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:.82rem;color:var(--text);width:100%;padding:2px 0}
+.mat-inp:focus{border-bottom:1px solid var(--gold)}
+.mat-del{width:22px;height:22px;background:none;border:1px solid var(--border);border-radius:4px;color:var(--muted);cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center}
+.mat-del:hover{border-color:var(--terra);color:var(--terra)}
+.mat-empty{padding:12px;text-align:center;font-size:.75rem;color:var(--muted)}
+
+/* Job detail */
+.jdr{display:flex;gap:0;border-bottom:1px solid var(--border);padding:10px 0}
+.jdr:last-child{border-bottom:none}
+.jdr-k{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;min-width:90px;padding-top:2px}
+.jdr-v{font-size:.88rem;color:var(--text2);flex:1}
+.team-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:14px;font-size:.76rem;margin:2px;font-weight:500}
+.tb-dot{width:6px;height:6px;border-radius:50%}
+.mat-table{width:100%;border-collapse:collapse;font-size:.78rem;margin-top:4px}
+.mat-table th{font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:4px 8px;text-align:left;border-bottom:1px solid var(--border)}
+.mat-table td{padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text2)}
+.mat-table tr:last-child td{border-bottom:none}
+
+/* Toast */
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.toast{display:flex;align-items:center;gap:9px;padding:11px 16px;border-radius:var(--radius-sm);font-size:.82rem;font-weight:500;box-shadow:var(--shadow-lg);animation:toastIn .25s ease;max-width:320px}
+@keyframes toastIn{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
+.toast.success{background:#fff;border-left:4px solid var(--green);color:var(--green)}
+.toast.error{background:#fff;border-left:4px solid var(--terra);color:var(--terra)}
+.toast.info{background:#fff;border-left:4px solid var(--gold);color:var(--gold)}
+
+@media(max-width:768px){
+  .cal-layout{grid-template-columns:1fr}
+  .cal-sidebar{display:none}
+  .list-job{grid-template-columns:70px 1fr auto;gap:8px}
+  .lj-type,.lj-addr{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-mark">N</div>
+    <div>
+      <div class="logo-text">Nandwani <span>Group</span></div>
+      <div class="logo-sub" id="logoSub">Job Scheduler</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <nav class="main-nav">
+      <button class="main-nav-btn active" id="mainTab-calendar" onclick="switchMain('calendar')" data-t="calendar" data-h="कैलेंडर">Calendar</button>
+      <button class="main-nav-btn" id="mainTab-employees" onclick="switchMain('employees')" data-t="employees" data-h="कर्मचारी">Employees</button>
+      <button class="main-nav-btn" id="mainTab-projects" onclick="switchMain('projects')" data-t="projects" data-h="प्रोजेक्ट">Projects</button>
+      <button class="main-nav-btn" id="mainTab-email" onclick="switchMain('email')" data-t="Report" data-h="रिपोर्ट">Report</button>
+    </nav>
+    <button class="btn-add" id="addJobBtn" onclick="openJobModal()" data-t="+ Book Job" data-h="+ काम बुक करें">+ Book Job</button>
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="langEN" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" id="langHI" onclick="setLang('hi')">हि</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDAR VIEW -->
+<div class="page-view active" id="view-calendar">
+  <div class="cal-layout">
+    <!-- Sidebar -->
+    <div class="cal-sidebar" id="calSidebar">
+      <!-- Mini Calendar -->
+      <div class="sidebar-block">
+        <div class="mini-cal-header">
+          <div class="mini-cal-month" id="miniCalTitle"></div>
+          <div style="display:flex;gap:4px">
+            <button class="mini-nav" onclick="miniCalNav(-1)">‹</button>
+            <button class="mini-nav" onclick="miniCalNav(1)">›</button>
+          </div>
+        </div>
+        <div class="mini-grid" id="miniCalDays"></div>
+        <div class="mini-grid" id="miniCalGrid"></div>
+      </div>
+      <!-- Today summary -->
+      <div class="sidebar-block">
+        <div id="todaySummary"></div>
+      </div>
+      <!-- Company filters -->
+      <div class="sidebar-block">
+        <div class="sidebar-label" data-t="Companies" data-h="कंपनियाँ">Companies</div>
+        <div id="coFilters"></div>
+      </div>
+      <!-- Employee filter -->
+      <div class="sidebar-block" style="flex:1">
+        <div class="sidebar-label" data-t="Employees (tap to filter)" data-h="कर्मचारी (फ़िल्टर करने के लिए टैप करें)">Employees (tap to filter)</div>
+        <div id="sidebarEmps"></div>
+      </div>
+    </div>
+
+    <!-- Main calendar -->
+    <div class="cal-main">
+      <div class="cal-toolbar">
+        <div class="cal-view-tabs">
+          <div class="cvt active" id="calTab-week" onclick="switchCalView('week')" data-t="Week" data-h="सप्ताह">Week</div>
+          <div class="cvt" id="calTab-day" onclick="switchCalView('day')" data-t="Day" data-h="दिन">Day</div>
+          <div class="cvt" id="calTab-list" onclick="switchCalView('list')" data-t="List" data-h="सूची">List</div>
+        </div>
+        <div class="cal-nav">
+          <button class="nav-btn" onclick="navCal(-1)">‹</button>
+          <button class="today-btn" onclick="goToday()" data-t="Today" data-h="आज">Today</button>
+          <div class="cal-date-disp" id="calDateDisp"></div>
+          <button class="nav-btn" onclick="navCal(1)">›</button>
+        </div>
+      </div>
+      <div id="conflictBanner" class="conflict-banner" style="display:none"></div>
+      <div class="cal-body" id="calBody">
+        <div id="weekView"></div>
+        <div id="dayView" style="display:none"></div>
+        <div id="listView" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EMPLOYEES VIEW -->
+<div class="page-view" id="view-employees">
+  <div class="emp-page" id="empPageContent"></div>
+</div>
+
+<!-- PROJECTS VIEW -->
+<div class="page-view" id="view-projects">
+  <div class="proj-page" id="projPageContent"></div>
+</div>
+
+<!-- EMAIL VIEW -->
+<div class="page-view" id="view-email">
+  <div class="email-page" id="emailPageContent"></div>
+</div>
+
+<!-- JOB MODAL -->
+<div class="modal-overlay" id="jobModalOverlay" onclick="handleOverlay(event,'jobModalOverlay')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="jobModalTitle">Book a Job</div>
+      <button class="modal-close" onclick="closeModal('jobModalOverlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editJobId">
+      <div class="conflict-alert" id="conflictAlert"></div>
+      <!-- Project link -->
+      <div class="form-group">
+        <label class="form-label" data-t="Project (optional)" data-h="प्रोजेक्ट (वैकल्पिक)">Project (optional)</label>
+        <select class="form-select" id="jobProject">
+          <option value="">— One-off job (no project) —</option>
+        </select>
+      </div>
+      <!-- Employees -->
+      <div class="form-group">
+        <label class="form-label" data-t="Assign Employees *" data-h="कर्मचारी चुनें *">Assign Employees *</label>
+        <div class="emp-multi-wrap">
+          <input class="emp-multi-search" id="empSearch" placeholder="Search name..." oninput="filterEmpList()" data-t-ph="Search name..." data-h-ph="नाम खोजें...">
+          <div class="emp-multi-list" id="empMultiList"></div>
+        </div>
+        <div class="team-preview" id="teamPreview"></div>
+      </div>
+      <!-- Job type -->
+      <div class="form-group">
+        <label class="form-label" data-t="Job Type *" data-h="काम का प्रकार *">Job Type *</label>
+        <select class="form-select" id="jobType">
+          <option value="">Select job type...</option>
+          <option value="Curtain Fitting">Curtain Fitting</option>
+          <option value="Curtain Measurement">Curtain Measurement</option>
+          <option value="Roller Blind Installation">Roller Blind Installation</option>
+          <option value="Venetian Blind Installation">Venetian Blind Installation</option>
+          <option value="Sofa Cover Fitting">Sofa Cover Fitting</option>
+          <option value="Carpet Installation">Carpet Installation</option>
+          <option value="Wallpaper Installation">Wallpaper Installation</option>
+          <option value="Delivery Only">Delivery Only</option>
+          <option value="Site Measurement">Site Measurement</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-t="Date *" data-h="तारीख *">Date *</label>
+          <input class="form-input" type="date" id="jobDate" onchange="refreshBusyInfo()">
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-t="Time *" data-h="समय *">Time *</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <select class="form-select" id="jobStart" onchange="checkConflicts();autoSetEnd()">
+              <option value="">Start</option>
+            </select>
+            <span style="color:var(--muted);font-size:.8rem">→</span>
+            <select class="form-select" id="jobEnd" onchange="checkConflicts()">
+              <option value="">End</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" data-t="Customer Name *" data-h="ग्राहक का नाम *">Customer Name *</label>
+          <input class="form-input" type="text" id="jobCustomer" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label class="form-label" data-t="Phone" data-h="फ़ोन">Phone</label>
+          <input class="form-input" type="tel" id="jobPhone" placeholder="Contact number">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-t="Address *" data-h="पता *">Address *</label>
+        <input class="form-input" type="text" id="jobAddress" placeholder="Area, locality, landmark...">
+      </div>
+      <!-- Materials -->
+      <div class="form-group">
+        <label class="form-label" data-t="Materials Being Sent" data-h="भेजा जाने वाला सामान">Materials Being Sent</label>
+        <div class="mat-section">
+          <div class="mat-section-hdr">
+            <span data-t="Item List" data-h="सामान की सूची">Item List</span>
+            <button class="add-mat-btn" onclick="addMatRow()">＋ Add Item</button>
+          </div>
+          <div class="mat-col-hdr"><span data-t="Item / Description" data-h="सामान / विवरण">Item / Description</span><span data-t="Qty" data-h="मात्रा">Qty</span><span data-t="Unit" data-h="इकाई">Unit</span><span></span></div>
+          <div class="mat-rows" id="matRows"><div class="mat-empty" id="matEmpty" data-t="No items — click ＋ Add Item" data-h="कोई सामान नहीं — ＋ Add Item दबाएं">No items — click ＋ Add Item</div></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-t="Notes" data-h="नोट्स">Notes</label>
+        <textarea class="form-textarea" id="jobNotes" placeholder="Special instructions, access code..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('jobModalOverlay')" data-t="Cancel" data-h="रद्द करें">Cancel</button>
+      <button class="btn-primary" onclick="saveJob()" data-t="Save Job" data-h="काम सेव करें">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOB DETAIL MODAL -->
+<div class="modal-overlay" id="jobDetailOverlay" onclick="handleOverlay(event,'jobDetailOverlay')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="jobDetailTitle"></div>
+      <button class="modal-close" onclick="closeModal('jobDetailOverlay')">✕</button>
+    </div>
+    <div class="modal-body" id="jobDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('jobDetailOverlay')" data-t="Close" data-h="बंद करें">Close</button>
+      <button class="btn-ghost" style="border-color:var(--gold);color:var(--gold)" onclick="editFromDetail()" data-t="Edit" data-h="संपादित करें">Edit</button>
+      <button class="btn-danger" onclick="deleteFromDetail()" data-t="Delete" data-h="हटाएं">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMPLOYEE MODAL -->
+<div class="modal-overlay" id="empModalOverlay" onclick="handleOverlay(event,'empModalOverlay')">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title" id="empModalTitle">Add Employee</div>
+      <button class="modal-close" onclick="closeModal('empModalOverlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editEmpId">
+      <div class="form-group">
+        <label class="form-label" data-t="Full Name *" data-h="पूरा नाम *">Full Name *</label>
+        <input class="form-input" type="text" id="empName">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-t="Company *" data-h="कंपनी *">Company *</label>
+        <select class="form-select" id="empCompany">
+          <option value="handloom">Nandwani Handloom</option>
+          <option value="interior">Nandwani Interio</option>
+          <option value="homeglow">Home Glow</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-t="Role / Specialisation" data-h="भूमिका / विशेषज्ञता">Role / Specialisation</label>
+        <input class="form-input" type="text" id="empRole" placeholder="e.g. Curtain Fitter">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('empModalOverlay')" data-t="Cancel" data-h="रद्द करें">Cancel</button>
+      <button class="btn-primary" onclick="saveEmployee()" data-t="Save" data-h="सेव करें">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="projModalOverlay" onclick="handleOverlay(event,'projModalOverlay')">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title" id="projModalTitle">New Project</div>
+      <button class="modal-close" onclick="closeModal('projModalOverlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editProjId">
+      <div class="form-group">
+        <label class="form-label" data-t="Project Name *" data-h="प्रोजेक्ट का नाम *">Project Name *</label>
+        <input class="form-input" type="text" id="projName" placeholder="e.g. Medical College Curtains">
+        <div class="form-hint" data-t="Give it a short, clear name." data-h="एक छोटा, स्पष्ट नाम दें।">Give it a short, clear name.</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-t="Customer Name *" data-h="ग्राहक का नाम *">Customer Name *</label>
+        <input class="form-input" type="text" id="projCustomer">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-t="Phone" data-h="फ़ोन">Phone</label>
+        <input class="form-input" type="tel" id="projPhone">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-t="Address" data-h="पता">Address</label>
+        <input class="form-input" type="text" id="projAddress">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-t="Notes" data-h="नोट्स">Notes</label>
+        <textarea class="form-textarea" id="projNotes" placeholder="What work is involved..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('projModalOverlay')" data-t="Cancel" data-h="रद्द करें">Cancel</button>
+      <button class="btn-primary" onclick="saveProject()" data-t="Save Project" data-h="प्रोजेक्ट सेव करें">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ── DATA ── */
+const COMPANIES={
+  handloom:{name:'Nandwani Handloom',color:'#9a7230',short:'NH'},
+  interior:{name:'Nandwani Interio',color:'#2d5ea8',short:'NI'},
+  homeglow:{name:'Home Glow',color:'#3a7a4f',short:'HG'}
+};
+
+let lang='en';
+
+const T={
+  logoSub:{en:'Job Scheduler',hi:'काम शेड्यूलर'},
+  noJobs:{en:'No Jobs Scheduled',hi:'कोई काम नहीं है'},
+  noJobsSub:{en:'Click "+ Book Job" to get started.',hi:'शुरू करने के लिए "+ काम बुक करें" दबाएं।'},
+  today:{en:'Today',hi:'आज'},
+  totalJobs:{en:'Total Jobs',hi:'कुल काम'},
+  empOut:{en:'Employees Out',hi:'बाहर गए कर्मचारी'},
+  empFree:{en:'Free Employees',hi:'खाली कर्मचारी'},
+  companies:{en:'Companies',hi:'कंपनियाँ'},
+  empFilter:{en:'Employees (tap to filter)',hi:'कर्मचारी (फ़िल्टर करें)'},
+  bookJob:{en:'+ Book Job',hi:'+ काम बुक करें'},
+  week:{en:'Week',hi:'सप्ताह'},
+  day:{en:'Day',hi:'दिन'},
+  list:{en:'List',hi:'सूची'},
+  calendar:{en:'Calendar',hi:'कैलेंडर'},
+  employees:{en:'Employees',hi:'कर्मचारी'},
+  projects:{en:'Projects',hi:'प्रोजेक्ट'},
+  email:{en:'Report',hi:'रिपोर्ट'},
+  conflictMsg:{en:'⚠ Conflict: {names} already booked at this time.',hi:'⚠ टकराव: {names} इस समय पहले से बुक हैं।'},
+  activeProjs:{en:'Active',hi:'चालू'},
+  closedProjs:{en:'Closed',hi:'बंद'},
+  allProjs:{en:'All',hi:'सभी'},
+  closeProj:{en:'Close Project',hi:'प्रोजेक्ट बंद करें'},
+  reopenProj:{en:'Reopen',hi:'फिर खोलें'},
+  jobs:{en:'jobs',hi:'काम'},
+  availToday:{en:"Today's Availability",hi:'आज की उपलब्धता'},
+  empMgmt:{en:'Employee Management',hi:'कर्मचारी प्रबंधन'},
+  addEmp:{en:'+ Add Employee',hi:'+ कर्मचारी जोड़ें'},
+  newProj:{en:'+ New Project',hi:'+ नया प्रोजेक्ट'},
+  noProj:{en:'No projects yet.',hi:'अभी कोई प्रोजेक्ट नहीं।'},
+  noProjSub:{en:'Create one to track multi-visit customers.',hi:'बहु-विज़िट ग्राहकों को ट्रैक करने के लिए एक बनाएं।'},
+  sendTmr:{en:"📧 Send Tomorrow's Schedule",hi:'📧 कल का शेड्यूल भेजें'},
+  sendTdy:{en:"Send Today's Schedule",hi:'आज का शेड्यूल भेजें'},
+  copyClip:{en:'Copy to Clipboard',hi:'क्लिपबोर्ड पर कॉपी करें'},
+  emailPrev:{en:"Preview — Tomorrow's Schedule",hi:'पूर्वावलोकन — कल का शेड्यूल'},
+  reportEmail:{en:'Report Email',hi:'रिपोर्ट ईमेल'},
+  tmrJobs:{en:"Tomorrow's Jobs",hi:'कल के काम'},
+  schedule:{en:'Schedule',hi:'शेड्यूल'},
+  lastSent:{en:'Last Sent',hi:'आखिरी बार भेजा'},
+  daily8:{en:'Daily at 8:00 PM',hi:'रोज़ रात 8 बजे'},
+};
+
+function t(key,vars={}){
+  let s=(T[key]?.[lang])||key;
+  for(const[k,v] of Object.entries(vars)) s=s.replace(`{${k}}`,v);
+  return s;
+}
+
+function setLang(l){
+  lang=l;
+  document.getElementById('langEN').classList.toggle('active',l==='en');
+  document.getElementById('langHI').classList.toggle('active',l==='hi');
+  // Update all data-t / data-h elements
+  document.querySelectorAll('[data-t]').forEach(el=>{
+    const key=l==='en'?el.getAttribute('data-t'):el.getAttribute('data-h');
+    if(key) el.textContent=key;
+  });
+  document.querySelectorAll('[data-t-ph]').forEach(el=>{
+    el.placeholder=l==='en'?el.getAttribute('data-t-ph'):el.getAttribute('data-h-ph');
+  });
+  document.getElementById('logoSub').textContent=t('logoSub');
+  document.getElementById('addJobBtn').textContent=t('bookJob');
+  renderAll();
+}
+
+let employees=JSON.parse(localStorage.getItem('nh_employees')||'null')||[
+  {id:'e1',name:'Gaurav',company:'handloom',role:'Field Executive'},
+  {id:'e2',name:'Kanhiya',company:'handloom',role:'Curtain Fitter'},
+  {id:'e3',name:'Golu',company:'handloom',role:'Field Executive'},
+  {id:'e4',name:'Mukesh',company:'handloom',role:'Blind Installer'},
+  {id:'e5',name:'Subhash',company:'handloom',role:'Measurer'},
+  {id:'e6',name:'Sahajan',company:'handloom',role:'Field Executive'},
+  {id:'e7',name:'Vikas',company:'handloom',role:'Delivery'},
+  {id:'e8',name:'Ajay',company:'handloom',role:'Carpet Installer'},
+  {id:'e9',name:'Krishna',company:'handloom',role:'Field Executive'},
+  {id:'e10',name:'Tulal',company:'interior',role:'Interior Fitter'},
+  {id:'e11',name:'Guru',company:'interior',role:'Interior Fitter'},
+  {id:'e12',name:'Telkush',company:'interior',role:'Interior Fitter'},
+  {id:'e13',name:'Manoj',company:'homeglow',role:'Field Executive'},
+  {id:'e14',name:'Deep',company:'homeglow',role:'Field Executive'},
+  {id:'e15',name:'Nikhil',company:'homeglow',role:'Field Executive'},
+];
+
+let jobs=JSON.parse(localStorage.getItem('nh_jobs')||'[]').map(j=>(!j.empIds&&j.empId)?{...j,empIds:[j.empId]}:j);
+let projects=JSON.parse(localStorage.getItem('nh_projects')||'[]');
+
+function saveData(){
+  localStorage.setItem('nh_employees',JSON.stringify(employees));
+  localStorage.setItem('nh_jobs',JSON.stringify(jobs));
+  localStorage.setItem('nh_projects',JSON.stringify(projects));
+}
+
+let currentDate=new Date(),miniCalDate=new Date();
+let activeCalView='week',activeMainView='calendar';
+let selEmpFilter=null,coFilters={handloom:true,interior:true,homeglow:true};
+let selEmpIds=[],matRowCount=0,currentDetailJobId=null;
+
+/* ── UTILS ── */
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function empById(id){return employees.find(e=>e.id===id)}
+function jobById(id){return jobs.find(j=>j.id===id)}
+function projById(id){return projects.find(p=>p.id===id)}
+function toMin(t){if(!t)return 0;const[h,m]=t.split(':').map(Number);return h*60+m}
+function fmtTime(t){if(!t)return'';const[h,m]=t.split(':').map(Number);return`${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`}
+function fmtDate(d2){if(!d2)return'';return new Date(d2+'T00:00:00').toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+function sameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()}
+function ds(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function weekStart(d){const day=d.getDay(),diff=d.getDate()-day+(day===0?-6:1),s=new Date(d);s.setDate(diff);s.setHours(0,0,0,0);return s}
+function jobColor(job){const e=empById((job.empIds||[])[0]);return e?COMPANIES[e.company]?.color:'#888'}
+
+function filteredJobs(){
+  return jobs.filter(j=>{
+    const ids=j.empIds||[];
+    if(selEmpFilter&&!ids.includes(selEmpFilter))return false;
+    if(!ids.length)return true;
+    return ids.some(id=>{const e=empById(id);return e&&coFilters[e.company]});
+  });
+}
+
+/* ── CONFLICT DETECTION ── */
+function getEmpConflicts(empIds,date,startTime,endTime,excludeJobId=null){
+  if(!empIds.length||!date||!startTime||!endTime)return[];
+  const sMin=toMin(startTime),eMin=toMin(endTime);
+  const conflicts=[];
+  empIds.forEach(eid=>{
+    const dayJobs=jobs.filter(j=>j.id!==excludeJobId&&j.date===date&&(j.empIds||[]).includes(eid));
+    dayJobs.forEach(j=>{
+      const js=toMin(j.startTime),je=toMin(j.endTime);
+      if(sMin<je&&eMin>js){
+        const e=empById(eid);
+        conflicts.push({empName:e?.name||'?',jobType:j.jobType,start:j.startTime,end:j.endTime});
+      }
+    });
+  });
+  return conflicts;
+}
+
+function checkConflicts(){
+  const date=document.getElementById('jobDate').value;
+  const start=document.getElementById('jobStart').value;
+  const end=document.getElementById('jobEnd').value;
+  const excludeId=document.getElementById('editJobId').value||null;
+  const alert=document.getElementById('conflictAlert');
+  if(!date||!start||!end||!selEmpIds.length){alert.classList.remove('show');return}
+  const conflicts=getEmpConflicts(selEmpIds,date,start,end,excludeId);
+  if(conflicts.length){
+    const names=[...new Set(conflicts.map(c=>c.empName))].join(', ');
+    alert.textContent=t('conflictMsg',{names});
+    alert.classList.add('show');
+  }else{alert.classList.remove('show')}
+}
+
+/* ── TOAST ── */
+function toast(msg,type='info'){
+  const w=document.getElementById('toastWrap');
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.textContent=msg;
+  w.appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+/* ── MINI CALENDAR ── */
+function renderMiniCal(){
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('miniCalTitle').textContent=`${months[miniCalDate.getMonth()]} ${miniCalDate.getFullYear()}`;
+  document.getElementById('miniCalDays').innerHTML=['M','T','W','T','F','S','S'].map(d=>`<div class="mini-dow">${d}</div>`).join('');
+  const first=new Date(miniCalDate.getFullYear(),miniCalDate.getMonth(),1);
+  const last=new Date(miniCalDate.getFullYear(),miniCalDate.getMonth()+1,0);
+  const today=new Date();
+  let sd=first.getDay();sd=sd===0?6:sd-1;
+  let cells=[];
+  for(let i=0;i<sd;i++){const d=new Date(first);d.setDate(d.getDate()-(sd-i));cells.push({date:d,other:true})}
+  for(let i=1;i<=last.getDate();i++)cells.push({date:new Date(miniCalDate.getFullYear(),miniCalDate.getMonth(),i),other:false});
+  while(cells.length%7!==0){const d=new Date(cells[cells.length-1].date);d.setDate(d.getDate()+1);cells.push({date:d,other:true})}
+  document.getElementById('miniCalGrid').innerHTML=cells.map(c=>{
+    const d2=ds(c.date),hj=filteredJobs().some(j=>j.date===d2);
+    const iT=sameDay(c.date,today),iS=sameDay(c.date,currentDate);
+    let cl='mini-day';if(c.other)cl+=' other-m';if(iT&&!iS)cl+=' today-d';if(iS)cl+=' sel-d';if(hj&&!iS)cl+=' has-j';
+    return`<div class="${cl}" onclick="miniClick('${d2}')">${c.date.getDate()}</div>`;
+  }).join('');
+}
+function miniCalNav(dir){miniCalDate.setMonth(miniCalDate.getMonth()+dir);renderMiniCal()}
+function miniClick(d2){currentDate=new Date(d2+'T00:00:00');if(activeCalView!=='day')switchCalView('day');renderAll()}
+
+/* ── SIDEBAR ── */
+function renderTodaySummary(){
+  const td=ds(new Date()),tj=filteredJobs().filter(j=>j.date===td);
+  const THRESHOLD=4*60;
+  let rows='';
+  employees.filter(e=>coFilters[e.company]).forEach(e=>{
+    const c=COMPANIES[e.company];
+    const dayJobs=tj.filter(j=>(j.empIds||[]).includes(e.id));
+    if(!dayJobs.length){
+      rows+=`<div class="avail-emp-row"><div class="emp-avatar" style="background:${c.color};width:22px;height:22px;font-size:.55rem;flex-shrink:0">${e.name.slice(0,2).toUpperCase()}</div><div class="name">${e.name}</div><div class="status">Free</div></div>`;
+      return;
+    }
+    const busyMins=dayJobs.reduce((acc,j)=>acc+(toMin(j.endTime)-toMin(j.startTime)),0);
+    const morningFree=dayJobs.every(j=>toMin(j.startTime)>=13*60);
+    const eveningFree=dayJobs.every(j=>toMin(j.endTime)<=13*60);
+    if(busyMins>=THRESHOLD){
+      let label='Busy today';
+      if(morningFree)label='Evening only';
+      else if(eveningFree)label='Morning only';
+      rows+=`<div class="avail-emp-row"><div class="emp-avatar" style="background:${c.color};width:22px;height:22px;font-size:.55rem;flex-shrink:0;opacity:.4">${e.name.slice(0,2).toUpperCase()}</div><div class="name" style="color:var(--muted2)">${e.name}</div><div class="status">${label}</div></div>`;
+    } else {
+      let label='Part day out';
+      if(morningFree)label='Free till noon';
+      else if(eveningFree)label='Free after noon';
+      rows+=`<div class="avail-emp-row"><div class="emp-avatar" style="background:${c.color};width:22px;height:22px;font-size:.55rem;flex-shrink:0">${e.name.slice(0,2).toUpperCase()}</div><div class="name">${e.name}</div><div class="status part">${label}</div></div>`;
+    }
+  });
+  document.getElementById('todaySummary').innerHTML=`<div class="today-box-title">Today — ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>${rows||'<div style="font-size:.8rem;color:var(--muted)">No employees</div>'}`;
+}
+
+function renderCoFilters(){
+  document.getElementById('coFilters').innerHTML=Object.entries(COMPANIES).map(([k,c])=>`
+    <div class="co-filter" onclick="toggleCo('${k}')">
+      <div class="co-dot" style="background:${c.color}"></div>
+      <div class="co-name">${c.name}</div>
+      <div class="toggle ${coFilters[k]?'on':''}"></div>
+    </div>`).join('');
+}
+function toggleCo(k){coFilters[k]=!coFilters[k];renderAll()}
+
+function renderSidebarEmps(){
+  const td=ds(new Date());
+  document.getElementById('sidebarEmps').innerHTML=employees.filter(e=>coFilters[e.company]).map(e=>{
+    const c=COMPANIES[e.company];
+    const cnt=filteredJobs().filter(j=>j.date===td&&(j.empIds||[]).includes(e.id)).length;
+    return`<div class="emp-pill ${selEmpFilter===e.id?'sel-emp':''}" onclick="toggleEmpFilter('${e.id}')">
+      <div class="emp-avatar" style="background:${c.color}">${e.name.slice(0,2).toUpperCase()}</div>
+      <div class="emp-pill-name">${e.name}</div>
+      ${cnt>0?`<div class="emp-pill-badge">${cnt}</div>`:''}
+    </div>`;
+  }).join('');
+}
+function toggleEmpFilter(id){selEmpFilter=selEmpFilter===id?null:id;renderAll()}
+
+/* ── WEEK VIEW ── */
+function renderWeekView(){
+  const ws=weekStart(currentDate),today=new Date();
+  const HS=52,S=7,E=22;
+  const days=[];for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(d.getDate()+i);days.push(d)}
+  const dn=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html=`<div class="week-grid"><div class="wg-corner"></div>`;
+  days.forEach((d,i)=>{
+    const d2=ds(d),cnt=filteredJobs().filter(j=>j.date===d2).length,tc=sameDay(d,today);
+    html+=`<div class="wg-day-hdr ${tc?'today-col':''}" onclick="goDayView('${d2}')">
+      <div class="wg-dow">${dn[i]}</div><div class="wg-dn">${d.getDate()}</div>
+      <div class="wg-jcnt">${cnt?cnt+' '+t('jobs'):''}</div></div>`;
+  });
+  for(let h=S;h<E;h++){
+    html+=`<div class="wg-time-gutter"><span class="time-lbl">${fmtTime(`${String(h).padStart(2,'0')}:00`)}</span></div>`;
+    days.forEach(d=>{const d2=ds(d),tc=sameDay(d,today);html+=`<div class="wg-cell ${tc?'today-col':''}" onclick="quickBook('${d2}','${String(h).padStart(2,'0')}:00')"></div>`});
+  }
+  html+=`</div>`;
+  document.getElementById('weekView').innerHTML=`<div style="position:relative">${html}<div id="wko"></div></div>`;
+  setTimeout(()=>{
+    const g=document.querySelector('.week-grid');if(!g)return;
+    const ov=document.getElementById('wko'),gw=60,aw=g.offsetWidth-gw,cw=aw/7,hh=64;
+    days.forEach((d,ci)=>{
+      const d2=ds(d),dj=filteredJobs().filter(j=>j.date===d2),cl=gw+ci*cw;
+      dj.forEach(job=>{
+        if(!job.startTime||!job.endTime)return;
+        const sm=toMin(job.startTime)-S*60,em=toMin(job.endTime)-S*60;
+        if(em<=0||sm>=(E-S)*60)return;
+        const top=hh+Math.max(0,sm)/60*HS,ht=Math.max(18,(em-Math.max(0,sm))/60*HS-2);
+        const col=jobColor(job),names=(job.empIds||[]).map(id=>empById(id)?.name||'?').join(', ');
+        const b=document.createElement('div');b.className='job-block';
+        b.style.cssText=`position:absolute;top:${top}px;left:${cl+2}px;width:${cw-4}px;height:${ht}px;background:${col}22;border-color:${col};color:${col}`;
+        b.innerHTML=`<div class="jb-name">${names}</div><div class="jb-type" style="color:var(--text2)">${job.jobType}</div><div class="jb-time" style="color:var(--muted2)">${fmtTime(job.startTime)}–${fmtTime(job.endTime)}</div>`;
+        b.onclick=e=>{e.stopPropagation();openJobDetail(job.id)};ov.appendChild(b);
+      });
+    });
+    const now=new Date(),tc=days.findIndex(d=>sameDay(d,now));
+    if(tc>=0){const nm=now.getHours()*60+now.getMinutes()-S*60;if(nm>0&&nm<(E-S)*60){const l=document.createElement('div');l.className='current-time-line';l.style.cssText=`top:${hh+nm/60*HS}px;left:${gw+tc*cw}px;width:${cw}px`;ov.appendChild(l)}}
+  },50);
+}
+
+/* ── DAY VIEW ── */
+function renderDayView(){
+  const d2=ds(currentDate),dj=filteredJobs().filter(j=>j.date===d2).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+  const S=7,E=22,HS=60,hh=76;
+  const allIds=new Set(dj.flatMap(j=>j.empIds||[]));
+  let html=`<div class="day-grid" id="dgEl">
+    <div class="day-hdr">
+      <h2>${currentDate.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'})}</h2>
+      <div class="day-stats">
+        <div class="ds-stat"><div class="n">${dj.length}</div><div class="l">${t('jobs')}</div></div>
+        <div class="ds-stat"><div class="n">${allIds.size}</div><div class="l">${t('empOut')}</div></div>
+        <div class="ds-stat"><div class="n">${employees.length-allIds.size}</div><div class="l">${t('empFree')}</div></div>
+      </div>
+    </div>`;
+  for(let h=S;h<E;h++)html+=`<div class="day-tg"><span class="time-lbl">${fmtTime(`${String(h).padStart(2,'0')}:00`)}</span></div><div class="day-col" onclick="quickBook('${d2}','${String(h).padStart(2,'0')}:00')"></div>`;
+  html+=`</div>`;
+  document.getElementById('dayView').innerHTML=`<div style="position:relative">${html}<div id="dko"></div></div>`;
+  setTimeout(()=>{
+    const g=document.getElementById('dgEl');if(!g)return;
+    const gw=60,cw=g.offsetWidth-gw;
+    // Detect overlaps for layout
+    const placed=[];
+    dj.forEach((job,idx)=>{
+      if(!job.startTime||!job.endTime)return;
+      const sm=toMin(job.startTime)-S*60,em=toMin(job.endTime)-S*60;
+      if(em<=0||sm>=(E-S)*60)return;
+      const overlapping=placed.filter(p=>p.sm<em&&p.em>sm);
+      const col_idx=overlapping.length;
+      const total_cols=Math.max(1,overlapping.length+1);
+      placed.push({sm,em,col:col_idx});
+      const top=hh+Math.max(0,sm)/60*HS,ht=Math.max(32,(em-Math.max(0,sm))/60*HS-4);
+      const colWidth=cw/total_cols,left=gw+col_idx*colWidth;
+      const col=jobColor(job),ids=job.empIds||[];
+      const names=ids.map(id=>empById(id)?.name||'?').join(' + ');
+      const proj=job.projectId?projById(job.projectId):null;
+      const b=document.createElement('div');b.className='day-job-block';
+      b.style.cssText=`position:absolute;top:${top}px;left:${left+6}px;width:${colWidth-12}px;height:${ht}px;background:${col}18;border-color:${col}`;
+      b.innerHTML=`<div class="djb-emp" style="color:${col}">${names}</div>
+        <div class="djb-type" style="color:var(--text2)">${job.jobType}</div>
+        <div class="djb-addr" style="color:var(--muted2)">📍 ${job.address}</div>
+        ${proj?`<div class="djb-proj" style="color:var(--muted2)">📁 ${proj.name}</div>`:''}
+        <div class="djb-time" style="color:var(--muted2)">⏰ ${fmtTime(job.startTime)} – ${fmtTime(job.endTime)}</div>`;
+      b.onclick=e=>{e.stopPropagation();openJobDetail(job.id)};
+      document.getElementById('dko').appendChild(b);
+    });
+    if(sameDay(currentDate,new Date())){
+      const now=new Date(),nm=now.getHours()*60+now.getMinutes()-S*60;
+      if(nm>0&&nm<(E-S)*60){const l=document.createElement('div');l.className='current-time-line';l.style.cssText=`position:absolute;top:${hh+nm/60*HS}px;left:${gw}px;right:0`;document.getElementById('dko').appendChild(l)}
+    }
+  },50);
+}
+
+/* ── LIST VIEW ── */
+function renderListView(){
+  const fj=filteredJobs(),groups={};
+  fj.forEach(j=>{if(!groups[j.date])groups[j.date]=[];groups[j.date].push(j)});
+  const sorted=Object.keys(groups).sort();
+  if(!sorted.length){
+    document.getElementById('listView').innerHTML=`<div class="list-view-inner"><div class="empty-state"><div class="e-icon">📅</div><h3>${t('noJobs')}</h3><p>${t('noJobsSub')}</p></div></div>`;
+    return;
+  }
+  let html=`<div class="list-view-inner">`;
+  sorted.forEach(d2=>{
+    const d=new Date(d2+'T00:00:00'),label=d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const dj=groups[d2].sort((a,b)=>a.startTime.localeCompare(b.startTime));
+    html+=`<div class="list-date-grp"><div class="list-date-lbl">${label}<span class="list-date-cnt">${dj.length} ${t('jobs')}</span></div>`;
+    dj.forEach(job=>{
+      const ids=job.empIds||[],names=ids.map(id=>empById(id)?.name||'?').join(' + '),col=jobColor(job);
+      html+=`<div class="list-job" style="border-left-color:${col}" onclick="openJobDetail('${job.id}')">
+        <div class="lj-time">${fmtTime(job.startTime)}<br><small style="opacity:.4">→ ${fmtTime(job.endTime)}</small></div>
+        <div class="lj-emp">${names}</div>
+        <div class="lj-type">${job.jobType||'—'}</div>
+        <div class="lj-addr">${job.address||'—'}</div>
+        <div class="lj-actions">
+          <button class="icon-btn edit" onclick="event.stopPropagation();editJob('${job.id}')">✎</button>
+          <button class="icon-btn" onclick="event.stopPropagation();deleteJob('${job.id}')">✕</button>
+        </div></div>`;
+    });
+    html+=`</div>`;
+  });
+  document.getElementById('listView').innerHTML=html+`</div>`;
+}
+
+/* ── CALENDAR NAV ── */
+function navCal(dir){if(activeCalView==='week')currentDate.setDate(currentDate.getDate()+dir*7);else currentDate.setDate(currentDate.getDate()+dir);renderAll()}
+function goToday(){currentDate=new Date();renderAll()}
+function goDayView(d2){currentDate=new Date(d2+'T00:00:00');switchCalView('day')}
+function quickBook(d2,time){openJobModal(d2,time)}
+function updateCalHeader(){
+  const el=document.getElementById('calDateDisp');
+  if(activeCalView==='week'){const ws=weekStart(currentDate);const we=new Date(ws);we.setDate(we.getDate()+6);el.textContent=`${ws.toLocaleDateString('en-IN',{day:'numeric',month:'short'})} – ${we.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}`}
+  else el.textContent=currentDate.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'long',year:'numeric'});
+}
+function switchCalView(v){
+  activeCalView=v;
+  ['week','day','list'].forEach(x=>{document.getElementById(`calTab-${x}`)?.classList.toggle('active',x===v);document.getElementById(`${x}View`).style.display=x===v?'block':'none'});
+  updateCalHeader();
+  if(v==='week')renderWeekView();else if(v==='day')renderDayView();else renderListView();
+}
+function switchMain(v){
+  activeMainView=v;
+  document.querySelectorAll('.page-view').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`view-${v}`)?.classList.add('active');
+  document.querySelectorAll('.main-nav-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById(`mainTab-${v}`)?.classList.add('active');
+  if(v==='employees')renderEmpPage();
+  else if(v==='projects')renderProjPage();
+  else if(v==='email')renderEmailPage();
+}
+
+/* ── MATERIALS ── */
+function addMatRow(item='',qty='',unit=''){
+  document.getElementById('matEmpty')?.remove();
+  const id='mr_'+(matRowCount++);
+  const row=document.createElement('div');row.className='mat-row';row.id=id;
+  row.innerHTML=`<input class="mat-inp" type="text" placeholder="e.g. Curtain panel" value="${item}">
+    <input class="mat-inp" type="text" placeholder="4" value="${qty}" style="text-align:center">
+    <input class="mat-inp" type="text" placeholder="pcs" value="${unit}" style="text-align:center">
+    <button class="mat-del" onclick="removeMatRow('${id}')">✕</button>`;
+  document.getElementById('matRows').appendChild(row);
+}
+function removeMatRow(id){
+  document.getElementById(id)?.remove();
+  if(!document.querySelector('#matRows .mat-row'))
+    document.getElementById('matRows').innerHTML=`<div class="mat-empty" id="matEmpty">${lang==='en'?'No items — click ＋ Add Item':'कोई सामान नहीं — ＋ Add Item दबाएं'}</div>`;
+}
+function getMats(){
+  return[...document.querySelectorAll('#matRows .mat-row')].map(r=>{
+    const inp=r.querySelectorAll('.mat-inp');
+    const item=inp[0].value.trim();
+    return item?{item,qty:inp[1].value.trim(),unit:inp[2].value.trim()}:null;
+  }).filter(Boolean);
+}
+function clearMats(){matRowCount=0;document.getElementById('matRows').innerHTML=`<div class="mat-empty" id="matEmpty">${lang==='en'?'No items — click ＋ Add Item':'कोई सामान नहीं'}</div>`}
+function parseMats(raw){if(!raw)return[];try{const p=JSON.parse(raw);if(Array.isArray(p))return p}catch(e){}return raw.split(',').map(s=>({item:s.trim(),qty:'',unit:''})).filter(r=>r.item)}
+function loadMats(raw){clearMats();parseMats(raw).forEach(m=>addMatRow(m.item,m.qty,m.unit))}
+
+/* ── EMP MULTI SELECTOR ── */
+function buildEmpSelector(pre=[]){
+  selEmpIds=[...pre];
+  renderEmpList();updateTeamPreview();
+}
+function filterEmpList(){renderEmpList()}
+function renderEmpList(){
+  const q=(document.getElementById('empSearch')?.value||'').toLowerCase();
+  const date=document.getElementById('jobDate')?.value;
+  const start=document.getElementById('jobStart')?.value;
+  const end=document.getElementById('jobEnd')?.value;
+  const excludeId=document.getElementById('editJobId')?.value||null;
+  document.getElementById('empMultiList').innerHTML=employees.filter(e=>!q||e.name.toLowerCase().includes(q)).map(e=>{
+    const c=COMPANIES[e.company],ck=selEmpIds.includes(e.id);
+    // Check if this employee is busy at the selected time
+    let busyInfo='';
+    if(date&&start&&end&&!ck){
+      const cf=getEmpConflicts([e.id],date,start,end,excludeId);
+      if(cf.length)busyInfo=`<span class="emp-opt-busy">Busy ${fmtTime(cf[0].start)}–${fmtTime(cf[0].end)}</span>`;
+    }
+    return`<div class="emp-opt ${ck?'checked':''} ${busyInfo?'conflict-emp':''}" id="mo_${e.id}" onclick="toggleEmpSel('${e.id}')">
+      <div class="emp-cb">${ck?'✓':''}</div>
+      <div class="emp-avatar" style="background:${c.color};width:22px;height:22px;font-size:.58rem">${e.name.slice(0,2).toUpperCase()}</div>
+      <div class="emp-opt-name">${e.name}</div>
+      <div class="emp-opt-co">${c.short}</div>
+      ${busyInfo}
+    </div>`;
+  }).join('');
+}
+function toggleEmpSel(id){
+  const idx=selEmpIds.indexOf(id);
+  if(idx>=0)selEmpIds.splice(idx,1);else selEmpIds.push(id);
+  renderEmpList();updateTeamPreview();checkConflicts();
+}
+function updateTeamPreview(){
+  const p=document.getElementById('teamPreview');if(!p)return;
+  p.innerHTML=selEmpIds.map(id=>{const e=empById(id);if(!e)return'';const c=COMPANIES[e.company];return`<div class="team-chip"><div class="team-chip-dot" style="background:${c.color}"></div>${e.name}</div>`}).join('');
+}
+
+/* ── PROJECT DROPDOWN ── */
+function populateProjDropdown(){
+  const sel=document.getElementById('jobProject');
+  const open=projects.filter(p=>!p.closed);
+  sel.innerHTML=`<option value="">${lang==='en'?'— One-off job (no project) —':'— एकल काम (कोई प्रोजेक्ट नहीं) —'}</option>`+
+    open.map(p=>`<option value="${p.id}">${p.name} — ${p.customer}</option>`).join('');
+}
+
+/* ── TIME SELECTS ── */
+function buildTimeOptions(selId,selected=''){
+  const el=document.getElementById(selId);if(!el)return;
+  const label=selId==='jobStart'?'Start':'End';
+  let opts=`<option value="">${label} time</option>`;
+  for(let h=7;h<=23;h++){
+    for(let m=0;m<60;m+=5){
+      if(h===23&&m>0)break;
+      const val=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      opts+=`<option value="${val}" ${val===selected?'selected':''}>${fmtTime(val)}</option>`;
+    }
+  }
+  el.innerHTML=opts;
+}
+function autoSetEnd(){
+  const s=document.getElementById('jobStart').value;if(!s)return;
+  const end=document.getElementById('jobEnd').value;
+  if(!end){// Auto-suggest +2h
+    const sMin=toMin(s)+120;
+    const h=Math.floor(sMin/60),m=sMin%60;
+    if(h<=23){const v=`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;buildTimeOptions('jobEnd',v);}
+  }
+}
+function refreshBusyInfo(){checkConflicts();renderEmpList();}
+
+/* ── JOB MODAL ── */
+function openJobModal(pd,pt){
+  document.getElementById('editJobId').value='';
+  document.getElementById('jobModalTitle').textContent=lang==='en'?'Book a Job':'काम बुक करें';
+  buildEmpSelector(selEmpFilter?[selEmpFilter]:[]);
+  clearMats();
+  document.getElementById('jobDate').value=pd||ds(new Date());
+  buildTimeOptions('jobStart',pt||'');
+  buildTimeOptions('jobEnd','');
+  ['jobCustomer','jobAddress','jobPhone','jobNotes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('jobType').value='';
+  document.getElementById('conflictAlert').classList.remove('show');
+  populateProjDropdown();
+  document.getElementById('jobModalOverlay').classList.add('open');
+}
+function editJob(id){
+  const j=jobById(id);if(!j)return;
+  document.getElementById('editJobId').value=id;
+  document.getElementById('jobModalTitle').textContent=lang==='en'?'Edit Job':'काम संपादित करें';
+  buildEmpSelector(j.empIds||[]);
+  document.getElementById('jobDate').value=j.date;
+  buildTimeOptions('jobStart',j.startTime);
+  buildTimeOptions('jobEnd',j.endTime);
+  document.getElementById('jobCustomer').value=j.customer;
+  document.getElementById('jobAddress').value=j.address;
+  document.getElementById('jobPhone').value=j.phone||'';
+  document.getElementById('jobType').value=j.jobType;
+  document.getElementById('jobNotes').value=j.notes||'';
+  loadMats(j.materials||'');
+  populateProjDropdown();
+  document.getElementById('jobProject').value=j.projectId||'';
+  document.getElementById('conflictAlert').classList.remove('show');
+  document.getElementById('jobModalOverlay').classList.add('open');
+}
+function saveJob(){
+  if(!selEmpIds.length){toast(lang==='en'?'Select at least one employee':'कम से कम एक कर्मचारी चुनें','error');return}
+  const jt=document.getElementById('jobType').value,cu=document.getElementById('jobCustomer').value.trim();
+  const ad=document.getElementById('jobAddress').value.trim(),dt=document.getElementById('jobDate').value;
+  const st=document.getElementById('jobStart').value,et=document.getElementById('jobEnd').value;
+  if(!jt||!cu||!ad||!dt||!st||!et){toast(lang==='en'?'Fill all required fields (*)':'सभी ज़रूरी फ़ील्ड भरें (*)','error');return}
+  if(toMin(st)>=toMin(et)){toast(lang==='en'?'End time must be after start time':'समाप्ति समय शुरुआत के बाद होना चाहिए','error');return}
+  const eid=document.getElementById('editJobId').value;
+  const cf=getEmpConflicts(selEmpIds,dt,st,et,eid||null);
+  if(cf.length){
+    const names=[...new Set(cf.map(c=>c.empName))].join(', ');
+    const msg=lang==='en'?`⚠ Cannot save: ${names} already booked during this time.`:`⚠ सेव नहीं हो सकता: ${names} इस समय पहले से बुक हैं।`;
+    toast(msg,'error');return;
+  }
+  const mats=getMats(),data={empIds:[...selEmpIds],jobType:jt,customer:cu,address:ad,phone:document.getElementById('jobPhone').value.trim(),date:dt,startTime:st,endTime:et,materials:JSON.stringify(mats),notes:document.getElementById('jobNotes').value.trim(),projectId:document.getElementById('jobProject').value||null};
+  if(eid){const idx=jobs.findIndex(j=>j.id===eid);if(idx>=0)jobs[idx]={...jobs[idx],...data};toast(lang==='en'?'Job updated':'काम अपडेट हुआ','success')}
+  else{jobs.push({id:uid(),...data});toast(lang==='en'?'Job booked':'काम बुक हुआ','success')}
+  saveData();closeModal('jobModalOverlay');renderAll();
+}
+function deleteJob(id){
+  if(!confirm(lang==='en'?'Delete this job?':'यह काम हटाएं?'))return;
+  jobs=jobs.filter(j=>j.id!==id);saveData();toast(lang==='en'?'Deleted':'हटाया','info');renderAll();
+}
+
+/* ── JOB DETAIL ── */
+function openJobDetail(id){
+  const j=jobById(id);if(!j)return;
+  currentDetailJobId=id;
+  const ids=j.empIds||[],col=jobColor(j);
+  const teamHTML=ids.map(eid=>{const e=empById(eid);if(!e)return'';const c=COMPANIES[e.company];return`<span class="team-badge" style="background:${c.color}15;border:1px solid ${c.color}25"><span class="tb-dot" style="background:${c.color}"></span>${e.name} <span style="opacity:.4;font-size:.62rem">${c.short}</span></span>`}).join('');
+  const mats=parseMats(j.materials||'');
+  let matHTML='—';
+  if(mats.length)matHTML=`<table class="mat-table"><thead><tr><th>Item</th><th>Qty</th><th>Unit</th></tr></thead><tbody>${mats.map(m=>`<tr><td>${m.item}</td><td>${m.qty||'—'}</td><td>${m.unit||'—'}</td></tr>`).join('')}</tbody></table>`;
+  const proj=j.projectId?projById(j.projectId):null;
+  document.getElementById('jobDetailTitle').innerHTML=`<span style="color:${col}">${j.jobType}</span>`;
+  document.getElementById('jobDetailBody').innerHTML=`
+    <div class="jdr"><div class="jdr-k">Team</div><div class="jdr-v">${teamHTML}</div></div>
+    ${proj?`<div class="jdr"><div class="jdr-k">Project</div><div class="jdr-v" style="font-weight:600;color:var(--gold)">📁 ${proj.name}</div></div>`:''}
+    <div class="jdr"><div class="jdr-k">Customer</div><div class="jdr-v">${j.customer}</div></div>
+    <div class="jdr"><div class="jdr-k">Phone</div><div class="jdr-v">${j.phone||'—'}</div></div>
+    <div class="jdr"><div class="jdr-k">Address</div><div class="jdr-v">${j.address}</div></div>
+    <div class="jdr"><div class="jdr-k">Date</div><div class="jdr-v">${fmtDate(j.date)}</div></div>
+    <div class="jdr"><div class="jdr-k">Time</div><div class="jdr-v">${fmtTime(j.startTime)} – ${fmtTime(j.endTime)}</div></div>
+    <div class="jdr"><div class="jdr-k">Materials</div><div class="jdr-v">${matHTML}</div></div>
+    <div class="jdr"><div class="jdr-k">Notes</div><div class="jdr-v">${j.notes||'—'}</div></div>`;
+  document.getElementById('jobDetailOverlay').classList.add('open');
+}
+function editFromDetail(){closeModal('jobDetailOverlay');editJob(currentDetailJobId)}
+function deleteFromDetail(){if(!confirm(lang==='en'?'Delete this job?':'यह काम हटाएं?'))return;jobs=jobs.filter(j=>j.id!==currentDetailJobId);saveData();toast('Deleted','info');closeModal('jobDetailOverlay');renderAll()}
+
+/* ── EMPLOYEES PAGE ── */
+function renderEmpPage(){
+  const td=ds(new Date());
+  let html=`<div class="emp-page-hdr"><h2>${t('empMgmt')}</h2><button class="btn-primary" onclick="openEmpModal()">${t('addEmp')}</button></div>`;
+  // Employee cards by company
+  Object.entries(COMPANIES).forEach(([k,c])=>{
+    const ce=employees.filter(e=>e.company===k);
+    html+=`<div class="co-section"><div class="co-hdr"><div class="co-bar" style="background:${c.color}"></div><h3>${c.name}</h3><span class="co-count">${ce.length} ${t('employees')}</span></div><div class="emp-cards">`;
+    ce.forEach(e=>{
+      const cnt=jobs.filter(j=>(j.empIds||[]).includes(e.id)).length;
+      const todayJobs=jobs.filter(j=>j.date===td&&(j.empIds||[]).includes(e.id));
+      const busyToday=todayJobs.length>0;
+      html+=`<div class="emp-card" style="border-left-color:${c.color}">
+        <div class="emp-card-av" style="background:${c.color}">${e.name.slice(0,2).toUpperCase()}</div>
+        <div class="emp-card-info">
+          <div class="emp-card-name">${e.name}</div>
+          <div class="emp-card-meta">${e.role||c.name}</div>
+          ${busyToday?`<div style="font-size:.65rem;color:var(--terra);margin-top:2px">Out today (${todayJobs.length} job${todayJobs.length>1?'s':''})</div>`:''}
+        </div>
+        <div class="emp-card-acts">
+          <button class="icon-btn edit" onclick="openEmpModal('${e.id}')">✎</button>
+          <button class="icon-btn" onclick="removeEmp('${e.id}')">✕</button>
+        </div></div>`;
+    });
+    html+=`<div class="add-emp-card" onclick="openEmpModal(null,'${k}')"><span>＋</span><span>${lang==='en'?`Add to ${c.name}`:`${c.name} में जोड़ें`}</span></div></div></div>`;
+  });
+  document.getElementById('empPageContent').innerHTML=html;
+}
+function openEmpModal(id,pre){
+  document.getElementById('editEmpId').value=id||'';
+  if(id){const e=empById(id);document.getElementById('empModalTitle').textContent=lang==='en'?'Edit Employee':'कर्मचारी संपादित करें';document.getElementById('empName').value=e.name;document.getElementById('empCompany').value=e.company;document.getElementById('empRole').value=e.role||''}
+  else{document.getElementById('empModalTitle').textContent=lang==='en'?'Add Employee':'कर्मचारी जोड़ें';document.getElementById('empName').value='';document.getElementById('empCompany').value=pre||'handloom';document.getElementById('empRole').value=''}
+  document.getElementById('empModalOverlay').classList.add('open');
+}
+function saveEmployee(){
+  const name=document.getElementById('empName').value.trim(),company=document.getElementById('empCompany').value,role=document.getElementById('empRole').value.trim();
+  if(!name){toast(lang==='en'?'Enter employee name':'कर्मचारी का नाम दर्ज करें','error');return}
+  const eid=document.getElementById('editEmpId').value;
+  if(eid){const idx=employees.findIndex(e=>e.id===eid);if(idx>=0)employees[idx]={...employees[idx],name,company,role};toast(lang==='en'?'Updated':'अपडेट हुआ','success')}
+  else{employees.push({id:'e'+uid(),name,company,role});toast(lang==='en'?'Employee added':'कर्मचारी जोड़ा','success')}
+  saveData();closeModal('empModalOverlay');renderEmpPage();renderSidebarEmps();
+}
+function removeEmp(id){
+  const e=empById(id);
+  if(!confirm(lang==='en'?`Remove ${e?.name}?`:`${e?.name} को हटाएं?`))return;
+  employees=employees.filter(e=>e.id!==id);saveData();toast(lang==='en'?'Removed':'हटाया','info');renderEmpPage();renderSidebarEmps();
+}
+
+/* ── PROJECTS PAGE ── */
+let projFilter='active';
+function renderProjPage(){
+  let filtered=projects;
+  if(projFilter==='active')filtered=projects.filter(p=>!p.closed);
+  else if(projFilter==='closed')filtered=projects.filter(p=>p.closed);
+  let html=`<div class="proj-page-hdr"><h2>${t('projects')}</h2><button class="btn-primary" onclick="openProjModal()">${t('newProj')}</button></div>`;
+  html+=`<div class="proj-tabs">
+    <div class="ptab ${projFilter==='active'?'active':''}" onclick="projFilter='active';renderProjPage()">${t('activeProjs')} (${projects.filter(p=>!p.closed).length})</div>
+    <div class="ptab ${projFilter==='closed'?'active':''}" onclick="projFilter='closed';renderProjPage()">${t('closedProjs')} (${projects.filter(p=>p.closed).length})</div>
+    <div class="ptab ${projFilter==='all'?'active':''}" onclick="projFilter='all';renderProjPage()">${t('allProjs')} (${projects.length})</div>
+  </div>`;
+  if(!filtered.length){
+    html+=`<div class="empty-state"><div class="e-icon">📁</div><h3>${t('noProj')}</h3><p>${t('noProjSub')}</p></div>`;
+  }else{
+    html+=`<div class="proj-grid">`;
+    filtered.forEach(p=>{
+      const pjobs=jobs.filter(j=>j.projectId===p.id);
+      const upcoming=pjobs.filter(j=>j.date>=ds(new Date())).length;
+      html+=`<div class="proj-card ${p.closed?'closed':''}">
+        <div class="proj-card-top">
+          <h3>${p.name}</h3>
+          <div class="proj-customer">👤 ${p.customer}${p.phone?` · 📞 ${p.phone}`:''}</div>
+          <div class="proj-badges">
+            <span class="proj-badge ${p.closed?'status-closed':'status-active'}">${p.closed?(lang==='en'?'Closed':'बंद'):(lang==='en'?'Active':'चालू')}</span>
+            ${p.address?`<span class="proj-badge" style="background:var(--surface3);color:var(--muted2)">📍 ${p.address}</span>`:''}
+          </div>
+        </div>
+        <div class="proj-card-body">
+          <div class="proj-stat"><div class="n">${pjobs.length}</div><div class="l">${lang==='en'?'Total Jobs':'कुल काम'}</div></div>
+          <div class="proj-stat"><div class="n">${upcoming}</div><div class="l">${lang==='en'?'Upcoming':'आगामी'}</div></div>
+          ${p.notes?`<div style="flex:1;font-size:.75rem;color:var(--muted2);line-height:1.5;padding-left:12px;border-left:1px solid var(--border)">${p.notes}</div>`:''}
+        </div>
+        <div class="proj-card-footer">
+          <button class="btn-ghost btn-sm" onclick="openProjModal('${p.id}')">${lang==='en'?'Edit':'संपादित करें'}</button>
+          ${!p.closed?`<button class="btn-ghost btn-sm" style="border-color:var(--terra);color:var(--terra)" onclick="closeProject('${p.id}')">${t('closeProj')}</button>`
+          :`<button class="btn-ghost btn-sm" onclick="reopenProject('${p.id}')">${t('reopenProj')}</button>`}
+          <button class="btn-primary btn-sm" onclick="bookJobForProject('${p.id}')">${lang==='en'?'+ Job':'+ काम'}</button>
+        </div>
+      </div>`;
+    });
+    html+=`</div>`;
+  }
+  document.getElementById('projPageContent').innerHTML=html;
+}
+function openProjModal(id){
+  document.getElementById('editProjId').value=id||'';
+  if(id){const p=projById(id);document.getElementById('projModalTitle').textContent=lang==='en'?'Edit Project':'प्रोजेक्ट संपादित करें';document.getElementById('projName').value=p.name;document.getElementById('projCustomer').value=p.customer;document.getElementById('projPhone').value=p.phone||'';document.getElementById('projAddress').value=p.address||'';document.getElementById('projNotes').value=p.notes||''}
+  else{document.getElementById('projModalTitle').textContent=lang==='en'?'New Project':'नया प्रोजेक्ट';['projName','projCustomer','projPhone','projAddress','projNotes'].forEach(id=>document.getElementById(id).value='')}
+  document.getElementById('projModalOverlay').classList.add('open');
+}
+function saveProject(){
+  const name=document.getElementById('projName').value.trim(),customer=document.getElementById('projCustomer').value.trim();
+  if(!name||!customer){toast(lang==='en'?'Project name and customer required':'प्रोजेक्ट नाम और ग्राहक आवश्यक हैं','error');return}
+  const pid=document.getElementById('editProjId').value;
+  const data={name,customer,phone:document.getElementById('projPhone').value.trim(),address:document.getElementById('projAddress').value.trim(),notes:document.getElementById('projNotes').value.trim()};
+  if(pid){const idx=projects.findIndex(p=>p.id===pid);if(idx>=0)projects[idx]={...projects[idx],...data};toast(lang==='en'?'Project updated':'प्रोजेक्ट अपडेट हुआ','success')}
+  else{projects.push({id:'p'+uid(),closed:false,...data});toast(lang==='en'?'Project created':'प्रोजेक्ट बना','success')}
+  saveData();closeModal('projModalOverlay');renderProjPage();
+}
+function closeProject(id){
+  if(!confirm(lang==='en'?'Close this project? It will be archived.':'यह प्रोजेक्ट बंद करें? इसे संग्रहीत किया जाएगा।'))return;
+  const idx=projects.findIndex(p=>p.id===id);if(idx>=0)projects[idx].closed=true;
+  saveData();toast(lang==='en'?'Project closed':'प्रोजेक्ट बंद हुआ','info');renderProjPage();
+}
+function reopenProject(id){
+  const idx=projects.findIndex(p=>p.id===id);if(idx>=0)projects[idx].closed=false;
+  saveData();toast(lang==='en'?'Project reopened':'प्रोजेक्ट फिर खोला','success');renderProjPage();
+}
+function bookJobForProject(projId){
+  switchMain('calendar');
+  setTimeout(()=>{openJobModal();document.getElementById('jobProject').value=projId},100);
+}
+
+/* ── EMAIL ── */
+function renderEmailPage(){
+  const today=ds(new Date());
+  document.getElementById('emailPageContent').innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <h2 style="font-family:'Literata',serif;font-size:1.6rem">Daily Report</h2>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="nav-btn" onclick="reportNavDay(-1)">‹</button>
+        <input class="form-input" type="date" id="reportDate" value="${today}" style="max-width:180px;font-size:.9rem" onchange="refreshReport()">
+        <button class="nav-btn" onclick="reportNavDay(1)">›</button>
+        <button class="today-btn" onclick="document.getElementById('reportDate').value='${today}';refreshReport()">Today</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="printReport()">🖨 Print</button>
+      <button class="btn-ghost" onclick="copyReport()">📋 Copy Text</button>
+    </div>
+    <div id="reportCards"></div>`;
+  refreshReport();
+}
+
+function reportNavDay(dir){
+  const el=document.getElementById('reportDate');if(!el)return;
+  const d=new Date(el.value+'T00:00:00');d.setDate(d.getDate()+dir);
+  el.value=ds(d);refreshReport();
+}
+
+function refreshReport(){
+  const d2=document.getElementById('reportDate')?.value;
+  if(!d2)return;
+  const d=new Date(d2+'T00:00:00');
+  const dj=jobs.filter(j=>j.date===d2).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+  const dateLabel=d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  let html=`<div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:20px 24px;margin-bottom:16px">
+    <div style="font-family:'Literata',serif;font-size:1.35rem;color:var(--text);margin-bottom:4px">Nandwani Group — Daily Report</div>
+    <div style="font-size:.9rem;color:var(--muted2)">${dateLabel}</div>
+    <div style="margin-top:12px;background:var(--surface2);border-radius:var(--radius-sm);padding:10px 14px;font-size:.95rem;color:var(--text2)">
+      ${dj.length?`<strong>${dj.length} Job${dj.length>1?'s':''} Scheduled</strong>`:'<span style="color:var(--muted)">No jobs scheduled for this day.</span>'}
+    </div>
+  </div>`;
+  if(dj.length){
+    // Group by company
+    const byC={};
+    dj.forEach(j=>{const co=(empById((j.empIds||[])[0])?.company)||'handloom';if(!byC[co])byC[co]=[];byC[co].push(j)});
+    Object.entries(byC).forEach(([co,cj])=>{
+      const c=COMPANIES[co];
+      html+=`<div style="margin-bottom:20px">
+        <div style="font-family:'Literata',serif;font-size:1.1rem;color:${c.color};margin-bottom:10px;padding-bottom:8px;border-bottom:2px solid ${c.color}30">${c.name}</div>`;
+      cj.forEach(j=>{
+        const names=(j.empIds||[]).map(id=>empById(id)?.name||'?').join(' + ');
+        const mats=parseMats(j.materials||'');
+        const proj=j.projectId?projById(j.projectId):null;
+        html+=`<div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid ${c.color};border-radius:var(--radius-sm);padding:14px 16px;margin-bottom:10px">
+          <div style="font-size:.78rem;color:${c.color};font-family:'JetBrains Mono',monospace;margin-bottom:5px">${fmtTime(j.startTime)} – ${fmtTime(j.endTime)}</div>
+          <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:8px">${names} — ${j.jobType}</div>
+          <div style="display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--text2)">
+            <div>👤 ${j.customer}${j.phone?` &nbsp;·&nbsp; 📞 ${j.phone}`:''}</div>
+            <div>📍 ${j.address}</div>
+            ${proj?`<div style="color:var(--gold)">📁 ${proj.name}</div>`:''}
+            ${mats.length?`<div style="margin-top:6px;font-size:.8rem;color:var(--muted2)">📦 ${mats.map(m=>`${m.item}${m.qty?' × '+m.qty:''}${m.unit?' '+m.unit:''}`).join(' &nbsp;|&nbsp; ')}</div>`:''}
+            ${j.notes?`<div style="margin-top:4px;font-size:.8rem;color:var(--muted);font-style:italic">📝 ${j.notes}</div>`:''}
+          </div>
+        </div>`;
+      });
+      html+=`</div>`;
+    });
+  }
+  document.getElementById('reportCards').innerHTML=html;
+}
+
+function genEmailBody(targetDate){
+  const d2=ds(targetDate),dj=jobs.filter(j=>j.date===d2).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+  const dl=targetDate.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  if(!dj.length)return`Nandwani Group — Daily Schedule\n${'─'.repeat(40)}\n\nDate: ${dl}\n\nNo jobs scheduled.\n\n— Nandwani Job Scheduler`;
+  let body=`Nandwani Group — Daily Schedule\n${'─'.repeat(40)}\n\nDate: ${dl}\nTotal Jobs: ${dj.length}\n\n`;
+  const byC={};dj.forEach(j=>{const co=(empById((j.empIds||[])[0])?.company)||'handloom';if(!byC[co])byC[co]=[];byC[co].push(j)});
+  Object.entries(byC).forEach(([co,cj])=>{
+    body+=`\n▌ ${COMPANIES[co]?.name.toUpperCase()}\n${'─'.repeat(28)}\n\n`;
+    cj.forEach((j,idx)=>{
+      const names=(j.empIds||[]).map(id=>empById(id)?.name||'?').join(' + ');
+      body+=`${idx+1}. ${names}\n   Job     : ${j.jobType}\n   Customer: ${j.customer}\n   Address : ${j.address}\n`;
+      if(j.phone)body+=`   Phone   : ${j.phone}\n`;
+      body+=`   Time    : ${fmtTime(j.startTime)} – ${fmtTime(j.endTime)}\n`;
+      const mats=parseMats(j.materials||'');
+      if(mats.length){body+=`   Materials:\n`;mats.forEach(m=>body+=`     • ${m.item}${m.qty?' × '+m.qty:''}${m.unit?' '+m.unit:''}\n`)}
+      if(j.notes)body+=`   Notes   : ${j.notes}\n`;
+      body+='\n';
+    });
+  });
+  return body+`${'─'.repeat(40)}\nSent by Nandwani Job Scheduler`;
+}
+
+function printReport(){
+  const d2=document.getElementById('reportDate')?.value;
+  if(!d2)return;
+  const d=new Date(d2+'T00:00:00');
+  const dj=jobs.filter(j=>j.date===d2).sort((a,b)=>a.startTime.localeCompare(b.startTime));
+  const dateLabel=d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const byC={};dj.forEach(j=>{const co=(empById((j.empIds||[])[0])?.company)||'handloom';if(!byC[co])byC[co]=[];byC[co].push(j)});
+  let cardsHtml='';
+  Object.entries(byC).forEach(([co,cj])=>{
+    const c=COMPANIES[co];
+    cardsHtml+=`<div class="section"><div class="sec-title" style="color:${c.color}">${c.name}</div>`;
+    cj.forEach(j=>{
+      const names=(j.empIds||[]).map(id=>empById(id)?.name||'?').join(' + ');
+      const mats=parseMats(j.materials||'');
+      cardsHtml+=`<div class="job" style="border-left:3px solid ${c.color}">
+        <div class="time">${fmtTime(j.startTime)} – ${fmtTime(j.endTime)}</div>
+        <div class="job-title">${names} — ${j.jobType}</div>
+        <div class="detail">👤 ${j.customer}${j.phone?' · 📞 '+j.phone:''}</div>
+        <div class="detail">📍 ${j.address}</div>
+        ${mats.length?`<div class="detail mats">📦 ${mats.map(m=>`${m.item}${m.qty?' × '+m.qty:''}${m.unit?' '+m.unit:''}`).join(' | ')}</div>`:''}
+        ${j.notes?`<div class="detail notes">📝 ${j.notes}</div>`:''}
+      </div>`;
+    });
+    cardsHtml+=`</div>`;
+  });
+  const w=window.open('','_blank','width=750,height=1000');
+  w.document.write(`<!DOCTYPE html><html><head><title>Nandwani Report — ${dateLabel}</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body{font-family:'DM Sans',sans-serif;font-size:14px;padding:32px 40px;color:#1a130a;line-height:1.5;max-width:700px;margin:0 auto}
+    h1{font-size:22px;margin-bottom:4px}
+    .date{color:#8a7d6a;font-size:13px;margin-bottom:6px}
+    .summary{background:#f5f0e8;border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:15px;font-weight:600}
+    .section{margin-bottom:22px}
+    .sec-title{font-size:16px;font-weight:700;padding-bottom:6px;margin-bottom:10px;border-bottom:2px solid currentColor}
+    .job{border-left:3px solid #ccc;padding:10px 14px;margin-bottom:10px;border-radius:0 6px 6px 0;background:#faf7f2}
+    .time{font-size:12px;color:#9a7230;font-family:monospace;margin-bottom:4px}
+    .job-title{font-size:15px;font-weight:700;margin-bottom:6px}
+    .detail{font-size:13px;color:#3d3020;margin-bottom:2px}
+    .mats{color:#6a5d4e}.notes{color:#8a7d6a;font-style:italic}
+    @media print{body{padding:16px 20px}button{display:none}}
+  </style></head>
+  <body>
+    <h1>Nandwani Group — Daily Report</h1>
+    <div class="date">${dateLabel}</div>
+    <div class="summary">${dj.length} Job${dj.length!==1?'s':''} Scheduled</div>
+    ${cardsHtml||'<p style="color:#8a7d6a">No jobs scheduled.</p>'}
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>{w.focus();w.print()},500);
+}
+
+function copyReport(){
+  const d2=document.getElementById('reportDate')?.value||ds(new Date());
+  navigator.clipboard.writeText(genEmailBody(new Date(d2+'T00:00:00'))).then(()=>toast('Copied!','success'));
+}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function handleOverlay(e,id){if(e.target.id===id)closeModal(id)}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['jobModalOverlay','jobDetailOverlay','empModalOverlay','projModalOverlay'].forEach(id=>closeModal(id))});
+
+/* ── 8PM REMINDER ── */
+function check8PM(){const now=new Date(),ls=localStorage.getItem('nh_8pm_shown'),td=ds(now);if(now.getHours()>=20&&ls!==td){localStorage.setItem('nh_8pm_shown',td);setTimeout(()=>toast(lang==='en'?"⏰ 8 PM — time to send tomorrow's schedule!":'⏰ रात 8 बज गए — कल का शेड्यूल भेजें!','info'),2000)}}
+
+/* ── RENDER ALL ── */
+function renderAll(){
+  renderMiniCal();renderTodaySummary();renderCoFilters();renderSidebarEmps();updateCalHeader();
+  if(activeCalView==='week')renderWeekView();else if(activeCalView==='day')renderDayView();else renderListView();
+}
+
+/* ── SEED DATA ── */
+if(!jobs.length){
+  const t=new Date(),tmr=new Date(),da=new Date();tmr.setDate(tmr.getDate()+1);da.setDate(da.getDate()+2);
+  // Also create a sample project
+  if(!projects.length){
+    projects.push({id:'p1',name:'Medical College Curtains',customer:'Kiran Medical College',phone:'9811122334',address:'Collectorate Road, Katihar',notes:'All floors — curtains, blinds, wallpapers. Multiple visits needed.',closed:false});
+  }
+  jobs=[
+    {id:uid(),empIds:['e1','e2'],jobType:'Curtain Fitting',customer:'Ramesh Sharma',address:'Medical Chowk, Katihar',phone:'9876543210',date:ds(t),startTime:'09:00',endTime:'11:30',materials:JSON.stringify([{item:'Curtain panel (beige, 7ft)',qty:'4',unit:'pcs'},{item:'Curtain rod (steel)',qty:'2',unit:'pcs'}]),notes:'Ring bell twice',projectId:null},
+    {id:uid(),empIds:['e4'],jobType:'Roller Blind Installation',customer:'Sunita Devi',address:'Station Road, Katihar',phone:'9834567890',date:ds(t),startTime:'14:00',endTime:'16:00',materials:JSON.stringify([{item:'Roller blind blackout white',qty:'3',unit:'pcs'}]),notes:'',projectId:null},
+    {id:uid(),empIds:['e9'],jobType:'Curtain Measurement',customer:'Amit Gupta',address:'Bypass Road, Katihar',phone:'',date:ds(tmr),startTime:'10:00',endTime:'11:00',materials:JSON.stringify([]),notes:'New 3BHK flat — Krishna visiting',projectId:null},
+    {id:uid(),empIds:['e10','e11'],jobType:'Sofa Cover Fitting',customer:'Mrs. Yadav',address:'Housing Board Colony',phone:'9765432109',date:ds(tmr),startTime:'13:00',endTime:'15:30',materials:JSON.stringify([{item:'L-shape sofa cover maroon velvet',qty:'1',unit:'set'}]),notes:'',projectId:null},
+    {id:uid(),empIds:['e13','e14','e15'],jobType:'Carpet Installation',customer:'Kiran Medical College',address:'Collectorate Road, Katihar',phone:'9811122334',date:ds(da),startTime:'09:00',endTime:'17:00',materials:JSON.stringify([{item:'Wall-to-wall carpet grey',qty:'800',unit:'sqft'},{item:'Carpet adhesive',qty:'5',unit:'litres'}]),notes:'Large hotel lobby',projectId:'p1'},
+  ];
+  saveData();
+}
+
+switchMain('calendar');switchCalView('week');renderAll();check8PM();setInterval(check8PM,60000);
+</script>
+</body>
+</html>
