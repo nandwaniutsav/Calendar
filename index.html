@@ -776,6 +776,63 @@ function saveData(){
   fsSet('nandwani_data','projects', {list: projects});
 }
 
+// ── Firebase init + load data from Firestore ──
+async function initFirebase(){
+  try {
+    const {initializeApp} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const {getFirestore, doc, getDoc} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+
+    // ⚠️ Replace these values with your actual Firebase project config
+    // Find them at: Firebase Console → Project Settings → Your apps → SDK setup
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhJLPv576QqMK-0jdvw8TVGzy8WZcLu7o",
+  authDomain: "calendar-685e3.firebaseapp.com",
+  projectId: "calendar-685e3",
+  storageBucket: "calendar-685e3.firebasestorage.app",
+  messagingSenderId: "660430719505",
+  appId: "1:660430719505:web:4a4b6ac72ff611bcc07fb0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    db = getFirestore(app);
+
+    // Load all three collections from Firestore
+    const [empSnap, jobsSnap, projSnap] = await Promise.all([
+      getDoc(doc(db, 'nandwani_data', 'employees')),
+      getDoc(doc(db, 'nandwani_data', 'jobs')),
+      getDoc(doc(db, 'nandwani_data', 'projects')),
+    ]);
+
+    let changed = false;
+
+    if(empSnap.exists() && Array.isArray(empSnap.data().list)){
+      employees = empSnap.data().list;
+      localStorage.setItem('nh_employees', JSON.stringify(employees));
+      changed = true;
+    } else if(!empSnap.exists()){
+      // First run: seed employees into Firestore
+      fsSet('nandwani_data','employees',{list: employees});
+    }
+
+    if(jobsSnap.exists() && Array.isArray(jobsSnap.data().list)){
+      jobs = jobsSnap.data().list.map(j=>(!j.empIds&&j.empId)?{...j,empIds:[j.empId]}:j);
+      localStorage.setItem('nh_jobs', JSON.stringify(jobs));
+      changed = true;
+    }
+
+    if(projSnap.exists() && Array.isArray(projSnap.data().list)){
+      projects = projSnap.data().list;
+      localStorage.setItem('nh_projects', JSON.stringify(projects));
+      changed = true;
+    }
+
+    if(changed) renderAll();
+    console.log('✅ Firebase loaded successfully');
+  } catch(err) {
+    console.warn('Firebase init failed, using localStorage cache:', err);
+  }
+}
+
 let currentDate=new Date(),miniCalDate=new Date();
 let activeCalView='week',activeMainView='calendar';
 let selEmpFilter=null,coFilters={handloom:true,interior:true,homeglow:true};
@@ -1545,6 +1602,10 @@ function renderAll(){
 /* ── 8PM REMINDER ── */
 function check8PM(){const now=new Date(),ls=localStorage.getItem('nh_8pm_shown'),td=ds(now);if(now.getHours()>=20&&ls!==td){localStorage.setItem('nh_8pm_shown',td);setTimeout(()=>toast(lang==='en'?"⏰ 8 PM — time to send tomorrow's schedule!":'⏰ रात 8 बज गए — कल का शेड्यूल भेजें!','info'),2000)}}
 setInterval(check8PM,60000);
+
+// ── STARTUP ──
+renderAll();        // Paint immediately from localStorage cache
+initFirebase();     // Then sync from Firestore in background
 </script>
 </body>
 </html>
