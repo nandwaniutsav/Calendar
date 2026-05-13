@@ -780,54 +780,52 @@ function saveData(){
 async function initFirebase(){
   try {
     const {initializeApp} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const {getFirestore, doc, getDoc} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const {getFirestore, doc, onSnapshot} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
 
     // ⚠️ Replace these values with your actual Firebase project config
     // Find them at: Firebase Console → Project Settings → Your apps → SDK setup
     const firebaseConfig = {
-      apiKey: "AIzaSyAhJLPv576QqMK-0jdvw8TVGzy8WZcLu7o",
-  authDomain: "calendar-685e3.firebaseapp.com",
-  projectId: "calendar-685e3",
-  storageBucket: "calendar-685e3.firebasestorage.app",
-  messagingSenderId: "660430719505",
-  appId: "1:660430719505:web:4a4b6ac72ff611bcc07fb0"
+      apiKey:            "REPLACE_WITH_YOUR_API_KEY",
+      authDomain:        "calendar-685e3.firebaseapp.com",
+      projectId:         "calendar-685e3",
+      storageBucket:     "calendar-685e3.appspot.com",
+      messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
+      appId:             "REPLACE_WITH_YOUR_APP_ID"
     };
 
     const app = initializeApp(firebaseConfig);
     db = getFirestore(app);
 
-    // Load all three collections from Firestore
-    const [empSnap, jobsSnap, projSnap] = await Promise.all([
-      getDoc(doc(db, 'nandwani_data', 'employees')),
-      getDoc(doc(db, 'nandwani_data', 'jobs')),
-      getDoc(doc(db, 'nandwani_data', 'projects')),
-    ]);
+    // Real-time listener: employees
+    onSnapshot(doc(db, 'nandwani_data', 'employees'), snap => {
+      if(snap.exists() && Array.isArray(snap.data().list)){
+        employees = snap.data().list;
+        localStorage.setItem('nh_employees', JSON.stringify(employees));
+        renderAll();
+      } else if(!snap.exists()){
+        fsSet('nandwani_data', 'employees', {list: employees});
+      }
+    }, err => console.warn('employees listener error:', err));
 
-    let changed = false;
+    // Real-time listener: jobs
+    onSnapshot(doc(db, 'nandwani_data', 'jobs'), snap => {
+      if(snap.exists() && Array.isArray(snap.data().list)){
+        jobs = snap.data().list.map(j=>(!j.empIds&&j.empId)?{...j,empIds:[j.empId]}:j);
+        localStorage.setItem('nh_jobs', JSON.stringify(jobs));
+        renderAll();
+      }
+    }, err => console.warn('jobs listener error:', err));
 
-    if(empSnap.exists() && Array.isArray(empSnap.data().list)){
-      employees = empSnap.data().list;
-      localStorage.setItem('nh_employees', JSON.stringify(employees));
-      changed = true;
-    } else if(!empSnap.exists()){
-      // First run: seed employees into Firestore
-      fsSet('nandwani_data','employees',{list: employees});
-    }
+    // Real-time listener: projects
+    onSnapshot(doc(db, 'nandwani_data', 'projects'), snap => {
+      if(snap.exists() && Array.isArray(snap.data().list)){
+        projects = snap.data().list;
+        localStorage.setItem('nh_projects', JSON.stringify(projects));
+        renderAll();
+      }
+    }, err => console.warn('projects listener error:', err));
 
-    if(jobsSnap.exists() && Array.isArray(jobsSnap.data().list)){
-      jobs = jobsSnap.data().list.map(j=>(!j.empIds&&j.empId)?{...j,empIds:[j.empId]}:j);
-      localStorage.setItem('nh_jobs', JSON.stringify(jobs));
-      changed = true;
-    }
-
-    if(projSnap.exists() && Array.isArray(projSnap.data().list)){
-      projects = projSnap.data().list;
-      localStorage.setItem('nh_projects', JSON.stringify(projects));
-      changed = true;
-    }
-
-    if(changed) renderAll();
-    console.log('✅ Firebase loaded successfully');
+    console.log('✅ Firebase real-time listeners active');
   } catch(err) {
     console.warn('Firebase init failed, using localStorage cache:', err);
   }
