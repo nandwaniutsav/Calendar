@@ -362,7 +362,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     <div class="logo-mark">N</div>
     <div>
       <div class="logo-text">Nandwani <span>Group</span></div>
-      <div class="logo-sub" id="logoSub">Job Scheduler</div>
+      <div class="logo-sub" id="Work Calendar">Job Scheduler</div>
     </div>
   </div>
   <div class="topbar-right">
@@ -757,7 +757,7 @@ const HI={
   // search placeholder
   'Search name...':'नाम खोजें...',
   // one-off job option
-  '— One-off job (no project) —':'— एकल काम (कोई प्रोजेक्ट नहीं) —',
+  '—One time Job —':'— एकल काम (कोई प्रोजेक्ट नहीं) —',
   // start/end
   'Start time':'शुरुआत का समय','End time':'समाप्ति का समय',
   // Add to company
@@ -1383,7 +1383,7 @@ function updateTeamPreview(){
 function populateProjDropdown(){
   const sel=document.getElementById('jobProject');
   const open=projects.filter(p=>!p.closed);
-  sel.innerHTML=`<option value="">${T('— One-off job (no project) —')}</option>`+
+  sel.innerHTML=`<option value="">${T('—One time Job —')}</option>`+
     open.map(p=>`<option value="${p.id}">${p.name} — ${p.customer}</option>`).join('');
 }
 
