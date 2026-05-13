@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nandwani — Job Scheduler</title>
+<title>Nandwani — Job Calendar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Literata:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
 <style>
@@ -720,7 +720,15 @@ function setLang(l){
   renderAll();
 }
 
-let employees=JSON.parse(localStorage.getItem('nh_employees')||'null')||[
+/* ══════════════════════════════════════════
+   FIREBASE + DATA LAYER
+   Firestore is the source of truth.
+   localStorage is used only as a fast cache
+   for the initial paint while Firestore loads.
+══════════════════════════════════════════ */
+
+// ── Default employees (used only when Firestore is empty) ──
+const DEFAULT_EMPLOYEES = [
   {id:'e1',name:'Gaurav',company:'handloom',role:'Field Executive'},
   {id:'e2',name:'Kanhiya',company:'handloom',role:'Curtain Fitter'},
   {id:'e3',name:'Golu',company:'handloom',role:'Field Executive'},
@@ -738,14 +746,108 @@ let employees=JSON.parse(localStorage.getItem('nh_employees')||'null')||[
   {id:'e15',name:'Nikhil',company:'homeglow',role:'Field Executive'},
 ];
 
-let jobs=JSON.parse(localStorage.getItem('nh_jobs')||'[]').map(j=>(!j.empIds&&j.empId)?{...j,empIds:[j.empId]}:j);
-let projects=JSON.parse(localStorage.getItem('nh_projects')||'[]');
+// ── In-memory state (seeded from localStorage cache first) ──
+let employees = JSON.parse(localStorage.getItem('nh_employees')||'null') || JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES));
+let jobs      = JSON.parse(localStorage.getItem('nh_jobs')||'[]').map(j=>(!j.empIds&&j.empId)?{...j,empIds:[j.empId]}:j);
+let projects  = JSON.parse(localStorage.getItem('nh_projects')||'[]');
 
-function saveData(){
-  localStorage.setItem('nh_employees',JSON.stringify(employees));
-  localStorage.setItem('nh_jobs',JSON.stringify(jobs));
-  localStorage.setItem('nh_projects',JSON.stringify(projects));
+// ── Firestore write helpers ──
+let db = null; // set after Firebase init
+
+async function fsSet(col, docId, data){
+  if(!db) return;
+  const {doc, setDoc} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  await setDoc(doc(db, col, docId), data);
 }
+async function fsDel(col, docId){
+  if(!db) return;
+  const {doc, deleteDoc} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+  await deleteDoc(doc(db, col, docId));
+}
+
+// ── saveData: writes to Firestore + updates localStorage cache ──
+function saveData(){
+  // localStorage cache (instant)
+  localStorage.setItem('nh_employees', JSON.stringify(employees));
+  localStorage.setItem('nh_jobs',      JSON.stringify(jobs));
+  localStorage.setItem('nh_projects',  JSON.stringify(projects));
+  // Firestore (async, fire-and-forget)
+  if(!db) return;
+  // Write all three collections as single docs (simple for this scale)
+  fsSet('nandwani_data','employees',{list: employees});
+  fsSet('nandwani_data','jobs',     {list: jobs});
+  fsSet('nandwani_data','projects', {list: projects});
+}
+
+// Paint immediately from localStorage cache, Firebase will refresh shortly
+switchMain('calendar'); switchCalView('week'); renderAll(); check8PM();
+
+// ── Firebase init + real-time listener ──
+(async () => {
+  try {
+    const {initializeApp}        = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const {getFirestore, doc, onSnapshot} = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+
+    const app = initializeApp({
+      apiKey:            "AIzaSyAhJLPv576QqMK-0jdvw8TVGzy8WZcLu7o",
+      authDomain:        "calendar-685e3.firebaseapp.com",
+      projectId:         "calendar-685e3",
+      storageBucket:     "calendar-685e3.firebasestorage.app",
+      messagingSenderId: "660430719505",
+      appId:             "1:660430719505:web:4a4b6ac72ff611bcc07fb0"
+    });
+    db = getFirestore(app);
+
+    // Listen to each doc — updates fire whenever any device saves
+    const listen = (docId, onData) =>
+      onSnapshot(doc(db,'nandwani_data', docId), snap => {
+        if(snap.exists()) onData(snap.data().list || []);
+      });
+
+    let empLoaded=false, jobsLoaded=false, projLoaded=false;
+    const tryBootstrap = () => {
+      if(!empLoaded||!jobsLoaded||!projLoaded) return;
+      // If Firestore returned empty (brand new DB), seed defaults
+      if(!employees.length){
+        employees = JSON.parse(JSON.stringify(DEFAULT_EMPLOYEES));
+        const t=new Date(),tmr=new Date(),da=new Date();
+        tmr.setDate(tmr.getDate()+1); da.setDate(da.getDate()+2);
+        if(!projects.length) projects=[{id:'p1',name:'Medical College Curtains',customer:'Kiran Medical College',phone:'9811122334',address:'Collectorate Road, Katihar',notes:'All floors — curtains, blinds, wallpapers. Multiple visits needed.',closed:false}];
+        if(!jobs.length) jobs=[
+          {id:uid(),empIds:['e1','e2'],jobType:'Curtain Fitting',customer:'Ramesh Sharma',address:'Medical Chowk, Katihar',phone:'9876543210',date:ds(t),startTime:'09:00',endTime:'11:30',materials:JSON.stringify([{item:'Curtain panel (beige, 7ft)',qty:'4',unit:'pcs'},{item:'Curtain rod (steel)',qty:'2',unit:'pcs'}]),notes:'Ring bell twice',projectId:null},
+          {id:uid(),empIds:['e4'],jobType:'Roller Blind Installation',customer:'Sunita Devi',address:'Station Road, Katihar',phone:'9834567890',date:ds(t),startTime:'14:00',endTime:'16:00',materials:JSON.stringify([{item:'Roller blind blackout white',qty:'3',unit:'pcs'}]),notes:'',projectId:null},
+          {id:uid(),empIds:['e9'],jobType:'Curtain Measurement',customer:'Amit Gupta',address:'Bypass Road, Katihar',phone:'',date:ds(tmr),startTime:'10:00',endTime:'11:00',materials:JSON.stringify([]),notes:'New 3BHK flat — Krishna visiting',projectId:null},
+          {id:uid(),empIds:['e10','e11'],jobType:'Sofa Cover Fitting',customer:'Mrs. Yadav',address:'Housing Board Colony',phone:'9765432109',date:ds(tmr),startTime:'13:00',endTime:'15:30',materials:JSON.stringify([{item:'L-shape sofa cover maroon velvet',qty:'1',unit:'set'}]),notes:'',projectId:null},
+          {id:uid(),empIds:['e13','e14','e15'],jobType:'Carpet Installation',customer:'Kiran Medical College',address:'Collectorate Road, Katihar',phone:'9811122334',date:ds(da),startTime:'09:00',endTime:'17:00',materials:JSON.stringify([{item:'Wall-to-wall carpet grey',qty:'800',unit:'sqft'},{item:'Carpet adhesive',qty:'5',unit:'litres'}]),notes:'Large hotel lobby',projectId:'p1'},
+        ];
+        saveData();
+      }
+    };
+
+    listen('employees', list => {
+      employees = list.map(e=>e); empLoaded=true;
+      localStorage.setItem('nh_employees',JSON.stringify(employees));
+      tryBootstrap(); renderAll();
+    });
+    listen('jobs', list => {
+      jobs = list.map(j=>(!j.empIds&&j.empId)?{...j,empIds:[j.empId]}:j); jobsLoaded=true;
+      localStorage.setItem('nh_jobs',JSON.stringify(jobs));
+      tryBootstrap(); renderAll();
+    });
+    listen('projects', list => {
+      projects = list; projLoaded=true;
+      localStorage.setItem('nh_projects',JSON.stringify(projects));
+      tryBootstrap(); renderAll();
+    });
+
+    // Show sync indicator
+    setTimeout(()=>toast('🔄 Connected to cloud sync','success'), 800);
+  } catch(err){
+    console.warn('Firebase unavailable, running offline:', err);
+    toast('⚠️ Offline mode — data saved locally only','info');
+    renderAll(); check8PM(); setInterval(check8PM,60000);
+  }
+})();
 
 let currentDate=new Date(),miniCalDate=new Date();
 let activeCalView='week',activeMainView='calendar';
@@ -1489,7 +1591,9 @@ function printReport(){
     <div class="date">${dateLabel}</div>
     <div class="summary">${dj.length} Job${dj.length!==1?'s':''} Scheduled</div>
     ${cardsHtml||'<p style="color:#8a7d6a">No jobs scheduled.</p>'}
-  </body></html>`);
+  <!-- Firebase SDKs -->
+<!-- Firebase loaded via module below -->
+</body></html>`);
   w.document.close();
   setTimeout(()=>{w.focus();w.print()},500);
 }
@@ -1511,76 +1615,9 @@ function renderAll(){
   if(activeCalView==='week')renderWeekView();else if(activeCalView==='day')renderDayView();else renderListView();
 }
 
-/* ── SEED DATA ── */
-if(!jobs.length){
-  const t=new Date(),tmr=new Date(),da=new Date();tmr.setDate(tmr.getDate()+1);da.setDate(da.getDate()+2);
-  // Also create a sample project
-  if(!projects.length){
-    projects.push({id:'p1',name:'Medical College Curtains',customer:'Kiran Medical College',phone:'9811122334',address:'Collectorate Road, Katihar',notes:'All floors — curtains, blinds, wallpapers. Multiple visits needed.',closed:false});
-  }
-  jobs=[
-    {id:uid(),empIds:['e1','e2'],jobType:'Curtain Fitting',customer:'Ramesh Sharma',address:'Medical Chowk, Katihar',phone:'9876543210',date:ds(t),startTime:'09:00',endTime:'11:30',materials:JSON.stringify([{item:'Curtain panel (beige, 7ft)',qty:'4',unit:'pcs'},{item:'Curtain rod (steel)',qty:'2',unit:'pcs'}]),notes:'Ring bell twice',projectId:null},
-    {id:uid(),empIds:['e4'],jobType:'Roller Blind Installation',customer:'Sunita Devi',address:'Station Road, Katihar',phone:'9834567890',date:ds(t),startTime:'14:00',endTime:'16:00',materials:JSON.stringify([{item:'Roller blind blackout white',qty:'3',unit:'pcs'}]),notes:'',projectId:null},
-    {id:uid(),empIds:['e9'],jobType:'Curtain Measurement',customer:'Amit Gupta',address:'Bypass Road, Katihar',phone:'',date:ds(tmr),startTime:'10:00',endTime:'11:00',materials:JSON.stringify([]),notes:'New 3BHK flat — Krishna visiting',projectId:null},
-    {id:uid(),empIds:['e10','e11'],jobType:'Sofa Cover Fitting',customer:'Mrs. Yadav',address:'Housing Board Colony',phone:'9765432109',date:ds(tmr),startTime:'13:00',endTime:'15:30',materials:JSON.stringify([{item:'L-shape sofa cover maroon velvet',qty:'1',unit:'set'}]),notes:'',projectId:null},
-    {id:uid(),empIds:['e13','e14','e15'],jobType:'Carpet Installation',customer:'Kiran Medical College',address:'Collectorate Road, Katihar',phone:'9811122334',date:ds(da),startTime:'09:00',endTime:'17:00',materials:JSON.stringify([{item:'Wall-to-wall carpet grey',qty:'800',unit:'sqft'},{item:'Carpet adhesive',qty:'5',unit:'litres'}]),notes:'Large hotel lobby',projectId:'p1'},
-  ];
-  saveData();
-}
-
-switchMain('calendar');switchCalView('week');renderAll();check8PM();setInterval(check8PM,60000);
+/* ── 8PM REMINDER ── */
+function check8PM(){const now=new Date(),ls=localStorage.getItem('nh_8pm_shown'),td=ds(now);if(now.getHours()>=20&&ls!==td){localStorage.setItem('nh_8pm_shown',td);setTimeout(()=>toast(lang==='en'?"⏰ 8 PM — time to send tomorrow's schedule!":'⏰ रात 8 बज गए — कल का शेड्यूल भेजें!','info'),2000)}}
+setInterval(check8PM,60000);
 </script>
-  // ... existing code ending line 781
-switchMain('calendar');switchCalView('week');renderAll();check8PM();setInterval(check8PM,60000);
-</script>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { 
-    getFirestore, 
-    collection, 
-    addDoc, 
-    getDocs 
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyAhJLPv576QqMK-0jdvw8TVGzy8WZcLu7o",
-    authDomain: "calendar-685e3.firebaseapp.com",
-    projectId: "calendar-685e3",
-    storageBucket: "calendar-685e3.firebasestorage.app",
-    messagingSenderId: "660430719505",
-    appId: "1:660430719505:web:4a4b6ac72ff611bcc07fb0"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  window.addOrder = async function () {
-    const item = document.getElementById("itemInput").value;
-    if (!item) {
-      alert("Enter item name");
-      return;
-    }
-    await addDoc(collection(db, "orders"), {
-      item: item,
-      status: "pending",
-      timestamp: new Date()
-    });
-    alert("Order added");
-  };
-
-  window.loadOrders = async function () {
-    const querySnapshot = await getDocs(collection(db, "orders"));
-    const list = document.getElementById("ordersList");
-    list.innerHTML = "";
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      const li = document.createElement("li");
-      li.textContent = data.item + " - " + data.status;
-      list.appendChild(li);
-    });
-  };
-</script>
-
 </body>
 </html>
