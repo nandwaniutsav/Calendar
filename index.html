@@ -1530,5 +1530,57 @@ if(!jobs.length){
 
 switchMain('calendar');switchCalView('week');renderAll();check8PM();setInterval(check8PM,60000);
 </script>
+  // ... existing code ending line 781
+switchMain('calendar');switchCalView('week');renderAll();check8PM();setInterval(check8PM,60000);
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    getDocs 
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAhJLPv576QqMK-0jdvw8TVGzy8WZcLu7o",
+    authDomain: "calendar-685e3.firebaseapp.com",
+    projectId: "calendar-685e3",
+    storageBucket: "calendar-685e3.firebasestorage.app",
+    messagingSenderId: "660430719505",
+    appId: "1:660430719505:web:4a4b6ac72ff611bcc07fb0"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.addOrder = async function () {
+    const item = document.getElementById("itemInput").value;
+    if (!item) {
+      alert("Enter item name");
+      return;
+    }
+    await addDoc(collection(db, "orders"), {
+      item: item,
+      status: "pending",
+      timestamp: new Date()
+    });
+    alert("Order added");
+  };
+
+  window.loadOrders = async function () {
+    const querySnapshot = await getDocs(collection(db, "orders"));
+    const list = document.getElementById("ordersList");
+    list.innerHTML = "";
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      const li = document.createElement("li");
+      li.textContent = data.item + " - " + data.status;
+      list.appendChild(li);
+    });
+  };
+</script>
+
 </body>
 </html>
