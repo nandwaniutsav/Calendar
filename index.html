@@ -380,7 +380,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 </head>
 <body>
 
-<div id="offlineBanner">⚠️ You are offline — changes will sync when connection is restored.</div>
+<div id="offlineBanner">⚠️ <span id="offlineMsg">You are offline — changes will sync when connection is restored.</span></div>
+<div id="rulesBanner" style="display:none;background:#1a130a;color:#f5e6c8;padding:16px 24px;font-size:0.93rem;line-height:1.9;border-bottom:3px solid #9a7230">
+  <strong style="font-size:1.05rem;color:#f0c060">🔒 Firestore Security Rules are blocking access — fix in 60 seconds:</strong><br>
+  1. Go to <a href="https://console.firebase.google.com" target="_blank" style="color:#f0c060;font-weight:700">console.firebase.google.com</a> → select project <strong>calendar-685e3</strong><br>
+  2. Left sidebar → <strong>Firestore Database</strong> → click <strong>Rules</strong> tab at the top<br>
+  3. Delete everything and paste this, then click <strong style="color:#f0c060">Publish</strong>:<br>
+  <code style="display:block;background:#2a1f10;padding:12px 16px;border-radius:6px;margin:10px 0;font-size:0.9rem;color:#f0e0b0;border-left:3px solid #9a7230;white-space:pre">rules_version = &#39;2&#39;;
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}</code>
+  <button onclick="document.getElementById(&#39;rulesBanner&#39;).style.display=&#39;none&#39;" style="margin-top:4px;padding:7px 18px;background:#9a7230;border:none;border-radius:6px;color:white;cursor:pointer;font-size:0.9rem;font-weight:700">✕ Dismiss</button>
+</div>
 
 <!-- TOPBAR -->
 <div class="topbar">
@@ -786,87 +801,116 @@ function setSyncStatus(s,label){
   else if(s==='synced'){dot.classList.add('synced');lbl.textContent=label||T('Synced')}
   else if(s==='error'){dot.classList.add('error');lbl.textContent=label||T('Offline')}
   else{dot.classList.add('');lbl.textContent=label||T('Connecting…')}
-  // offline banner
-  document.getElementById('offlineBanner').classList.toggle('show',s==='error');
+  // Only hide banner on successful sync
+  if(s==='synced') document.getElementById('offlineBanner').classList.remove('show');
 }
 
 async function initFirebase(){
+  setSyncStatus('loading','Connecting…');
   try{
-    setSyncStatus('loading');
-    const {initializeApp,getApps}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-    const {getFirestore,doc,setDoc,onSnapshot,enableNetwork,disableNetwork}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    // ── Import Firebase SDK ──
+    const fbApp = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+    const fbFs  = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
 
-    _fsDoc=doc;
-    _fsSetDoc=setDoc;
+    const {initializeApp, getApps} = fbApp;
+    const {getFirestore, doc, setDoc, onSnapshot, enableNetwork} = fbFs;
 
-    // Prevent re-init if already done (hot reloads / multiple script runs)
-    const firebaseConfig={
-      apiKey: "AIzaSyB0yb2NAPaJNuccblQrSt9RHSxzY5KvM3c",
-      authDomain: "scheduler-ebbd3.firebaseapp.com",
-      projectId: "scheduler-ebbd3",
-      storageBucket: "scheduler-ebbd3.firebasestorage.app",
-      messagingSenderId: "416789369393",
-      appId: "1:416789369393:web:61f7746992ef4a75563b10"
+    _fsDoc    = doc;
+    _fsSetDoc = setDoc;
+
+    // ── Config — paste your new project's config here if you switched projects ──
+    const firebaseConfig = {
+      apiKey:            "AIzaSyAhJLPv576QqMK-0jdvw8TVGzy8WZcLu7o",
+      authDomain:        "calendar-685e3.firebaseapp.com",
+      projectId:         "calendar-685e3",
+      storageBucket:     "calendar-685e3.appspot.com",
+      messagingSenderId: "660430719505",
+      appId:             "1:660430719505:web:4a4b6ac72ff611bcc07fb0"
     };
 
-    const existingApps=getApps();
-    const app=existingApps.length>0?existingApps[0]:initializeApp(firebaseConfig);
-    db=getFirestore(app);
+    // Prevent duplicate app init (e.g. hot reloads)
+    const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
+    db = getFirestore(app);
 
-    // ── EMPLOYEES snapshot ──
-    onSnapshot(_fsDoc(db,'nandwani_data','employees'),
-      snap=>{
-        setSyncStatus('synced','Synced ✓');
-        if(snap.exists()&&Array.isArray(snap.data().list)){
-          employees=snap.data().list;
-          localStorage.setItem('nh_employees',JSON.stringify(employees));
-          firestoreReady=true;
+    // Shared error handler — shows real Firestore error code in the UI
+    function onSnapError(collection, err){
+      console.error('[Firestore]', collection, 'error:', err.code, err.message);
+      const friendly = err.code === 'permission-denied'
+        ? '🔒 Rules blocked — see yellow guide below'
+        : err.code === 'unavailable'
+        ? '📡 Network unavailable'
+        : 'Error: ' + err.code;
+      setSyncStatus('error', friendly);
+      const ob = document.getElementById('offlineBanner');
+      ob.querySelector('#offlineMsg').textContent =
+        'Firestore (' + collection + '): ' + err.code + ' — ' + err.message;
+      ob.classList.add('show');
+      // Show rules guide for permission errors
+      if(err.code === 'permission-denied'){
+        document.getElementById('rulesBanner').style.display = 'block';
+      }
+    }
+
+    // ── EMPLOYEES listener ──
+    onSnapshot(
+      doc(db, 'nandwani_data', 'employees'),
+      snap => {
+        setSyncStatus('synced', 'Synced ✓');
+        document.getElementById('offlineBanner').classList.remove('show');
+        if(snap.exists() && Array.isArray(snap.data().list)){
+          employees = snap.data().list;
+          localStorage.setItem('nh_employees', JSON.stringify(employees));
+          firestoreReady = true;
           renderAll();
         } else if(!snap.exists()){
-          // First time — seed with current employees
-          _writeDoc('employees',{list:employees});
+          // First-time seed
+          _writeDoc('employees', {list: employees});
         }
       },
-      err=>{console.error('employees snapshot error:',err);setSyncStatus('error')}
+      err => onSnapError('employees', err)
     );
 
-    // ── JOBS snapshot ──
-    onSnapshot(_fsDoc(db,'nandwani_data','jobs'),
-      snap=>{
-        setSyncStatus('synced','Synced ✓');
-        if(snap.exists()&&Array.isArray(snap.data().list)){
-          jobs=snap.data().list.map(j=>(!j.empIds&&j.empId)?{...j,empIds:[j.empId]}:j);
-          localStorage.setItem('nh_jobs',JSON.stringify(jobs));
-          firestoreReady=true;
+    // ── JOBS listener ──
+    onSnapshot(
+      doc(db, 'nandwani_data', 'jobs'),
+      snap => {
+        setSyncStatus('synced', 'Synced ✓');
+        if(snap.exists() && Array.isArray(snap.data().list)){
+          jobs = snap.data().list.map(j => (!j.empIds && j.empId) ? {...j, empIds:[j.empId]} : j);
+          localStorage.setItem('nh_jobs', JSON.stringify(jobs));
+          firestoreReady = true;
           renderAll();
         }
       },
-      err=>{console.error('jobs snapshot error:',err);setSyncStatus('error')}
+      err => onSnapError('jobs', err)
     );
 
-    // ── PROJECTS snapshot ──
-    onSnapshot(_fsDoc(db,'nandwani_data','projects'),
-      snap=>{
-        setSyncStatus('synced','Synced ✓');
-        if(snap.exists()&&Array.isArray(snap.data().list)){
-          projects=snap.data().list;
-          localStorage.setItem('nh_projects',JSON.stringify(projects));
-          firestoreReady=true;
+    // ── PROJECTS listener ──
+    onSnapshot(
+      doc(db, 'nandwani_data', 'projects'),
+      snap => {
+        setSyncStatus('synced', 'Synced ✓');
+        if(snap.exists() && Array.isArray(snap.data().list)){
+          projects = snap.data().list;
+          localStorage.setItem('nh_projects', JSON.stringify(projects));
+          firestoreReady = true;
           renderAll();
         }
       },
-      err=>{console.error('projects snapshot error:',err);setSyncStatus('error')}
+      err => onSnapError('projects', err)
     );
 
-    // Online/offline detection
-    window.addEventListener('online',()=>{setSyncStatus('syncing','Reconnecting…');enableNetwork(db).catch(()=>{})});
-    window.addEventListener('offline',()=>setSyncStatus('error','Offline'));
+    window.addEventListener('online',  () => { setSyncStatus('syncing','Reconnecting…'); enableNetwork(db).catch(()=>{}); });
+    window.addEventListener('offline', () => setSyncStatus('error','Offline'));
 
-    console.log('✅ Firebase listeners active');
+    console.log('✅ Firebase listeners active — project:', firebaseConfig.projectId);
+
   }catch(err){
-    console.error('Firebase init failed:',err);
-    setSyncStatus('error','Firebase error');
-    toast('Could not connect to database. Working offline.','error');
+    console.error('Firebase init failed:', err);
+    setSyncStatus('error', 'Firebase load error');
+    document.getElementById('offlineBanner').textContent =
+      `⚠️ Firebase failed to load: ${err.message} — check browser console for details.`;
+    document.getElementById('offlineBanner').classList.add('show');
   }
 }
 
