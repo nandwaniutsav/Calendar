@@ -800,7 +800,7 @@ function setSyncStatus(s,label){
   if(s==='syncing'){dot.classList.add('syncing');lbl.textContent=label||T('Syncing...')}
   else if(s==='synced'){dot.classList.add('synced');lbl.textContent=label||T('Synced')}
   else if(s==='error'){dot.classList.add('error');lbl.textContent=label||T('Offline')}
-  else{dot.classList.add('');lbl.textContent=label||T('Connecting…')}
+  else{lbl.textContent=label||T('Connecting…')}
   // Only hide banner on successful sync
   if(s==='synced') document.getElementById('offlineBanner').classList.remove('show');
 }
